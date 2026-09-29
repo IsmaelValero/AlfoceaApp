@@ -50,10 +50,17 @@ class JsonCollection<T extends Entity> implements Collection<T> {
   }
 
   private async writeAll(rows: T[]): Promise<void> {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    const tmp = `${this.file}.${process.pid}.tmp`;
-    await fs.writeFile(tmp, JSON.stringify(rows, null, 2), "utf8");
-    await fs.rename(tmp, this.file);
+    try {
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      const tmp = `${this.file}.${process.pid}.tmp`;
+      await fs.writeFile(tmp, JSON.stringify(rows, null, 2), "utf8");
+      await fs.rename(tmp, this.file);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      // En entornos sin disco escribible (p. ej. Vercel) no insistimos.
+      if (code === "EROFS" || code === "EACCES" || code === "EPERM") return;
+      throw error;
+    }
   }
 
   list(): Promise<T[]> {

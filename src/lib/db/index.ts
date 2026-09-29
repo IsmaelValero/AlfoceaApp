@@ -5,10 +5,17 @@ import { hasSupabaseEnv } from "@/lib/supabase";
 
 /**
  * Punto unico donde se elige el almacenamiento.
- * Con variables de Supabase usa Postgres; si no, cae a JSON local vacio.
+ * En produccion (Vercel) exige Supabase: el disco no se puede usar.
  */
 function buildAdapter(): DataAdapter {
   if (hasSupabaseEnv()) return createSupabaseAdapter();
+
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Faltan las variables de Supabase en Vercel: NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.",
+    );
+  }
+
   return createJsonAdapter();
 }
 
