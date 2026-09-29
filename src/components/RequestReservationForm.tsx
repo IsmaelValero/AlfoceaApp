@@ -95,7 +95,7 @@ export function RequestReservationForm({
           className="field"
           required
           maxLength={80}
-          placeholder="Comida, cumpleanos, bano..."
+          placeholder="Comida, cumpleaños, baño..."
           value={eventType}
           onChange={(event) => setEventType(event.target.value)}
         />

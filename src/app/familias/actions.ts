@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getAdminSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
 import { MEMBER_ROLES, type MemberRole } from "@/lib/types";
@@ -29,6 +30,9 @@ function parseFamily(formData: FormData) {
 }
 
 export async function createFamily(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede crear familias." };
+
   const parsed = parseFamily(formData);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -38,6 +42,9 @@ export async function createFamily(_prevState: FormState, formData: FormData): P
 }
 
 export async function updateFamily(id: string, _prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede editar familias." };
+
   const parsed = parseFamily(formData);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -48,11 +55,10 @@ export async function updateFamily(id: string, _prevState: FormState, formData: 
   redirect(`/familias/${id}`);
 }
 
-/**
- * Elimina la familia y sus miembros. Se bloquea si tiene reservas para no
- * dejar el calendario con referencias huerfanas.
- */
 export async function deleteFamily(formData: FormData) {
+  const admin = await getAdminSession();
+  if (!admin) return;
+
   const id = text(formData, "id");
 
   const reservations = await db.reservations.list();
@@ -86,15 +92,22 @@ function parseMember(formData: FormData) {
   return { data: { familyId, name, role, phone: phone || undefined, email: email || undefined } };
 }
 
-export async function createMember(formData: FormData) {
+export async function createMember(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede anadir personas." };
+
   const parsed = parseMember(formData);
-  if ("error" in parsed) return;
+  if ("error" in parsed) return { error: parsed.error };
 
   await db.members.create(parsed.data);
   refresh(parsed.data.familyId);
+  redirect(`/familias/${parsed.data.familyId}`);
 }
 
 export async function updateMember(id: string, _prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede editar personas." };
+
   const parsed = parseMember(formData);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -106,10 +119,12 @@ export async function updateMember(id: string, _prevState: FormState, formData: 
 }
 
 export async function deleteMember(formData: FormData) {
+  const admin = await getAdminSession();
+  if (!admin) return;
+
   const id = text(formData, "id");
   const familyId = text(formData, "familyId");
 
-  // Las reservas hechas por esta persona pasan a quedar solo a nombre de la familia.
   const reservations = await db.reservations.list();
   await Promise.all(
     reservations
@@ -119,4 +134,5 @@ export async function deleteMember(formData: FormData) {
 
   await db.members.remove(id);
   refresh(familyId);
+  redirect(`/familias/${familyId}`);
 }

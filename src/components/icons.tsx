@@ -1,9 +1,9 @@
 type IconProps = { className?: string };
 
-const NAVY = "#123B52";
-const SEA = "#236B85";
-const SAND = "#D8B27C";
-const PAPER = "#F5F7F6";
+const NAVY = "var(--color-brand-dark)";
+const SEA = "var(--color-brand)";
+const SAND = "var(--color-secondary)";
+const PAPER = "var(--color-canvas)";
 
 function Mark({ className = "h-7 w-7", children }: IconProps & { children: React.ReactNode }) {
   return (

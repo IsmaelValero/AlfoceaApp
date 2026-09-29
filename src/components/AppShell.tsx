@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { BootScreen } from "@/components/BootScreen";
 import { FloatingNav } from "@/components/FloatingNav";
-import { parentHref } from "@/lib/navigation";
+import { floatingNavFor, parentHref } from "@/lib/navigation";
+
+const MARK_COOKIE = "alfocea_mark";
 
 function splitHref(href: string) {
   const query = href.indexOf("?");
@@ -12,18 +15,24 @@ function splitHref(href: string) {
   return { pathname: href.slice(0, query), search: href.slice(query + 1) };
 }
 
+function readMark() {
+  if (typeof document === "undefined") return "?";
+  const match = document.cookie.match(new RegExp(`(?:^|; )${MARK_COOKIE}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : "?";
+}
+
 /**
  * Marco de telefono. En el ordenador se ve como un movil en vertical.
  * En un telefono real ocupa toda la pantalla y, en apaisado, se abre a lo ancho.
- * El boton de Inicio/Modulos vive fuera del scroll para quedarse centrado.
+ * El boton flotante vive fuera del scroll y cambia segun la pantalla.
  * El atras del movil sube a la pantalla padre, no al historial.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const search = useSearchParams().toString();
   const router = useRouter();
-  const navRight = path === "/";
-  const navLeft = path === "/modulos";
+  const fab = floatingNavFor(path);
+  const [mark, setMark] = useState("?");
   const here = search ? `${path}?${search}` : path;
   const currentRef = useRef(here);
   const previousRef = useRef(here);
@@ -32,6 +41,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     previousRef.current = currentRef.current;
     currentRef.current = here;
   }
+
+  useEffect(() => {
+    setMark(readMark());
+  }, [path]);
 
   useEffect(() => {
     const onPopState = (event: PopStateEvent) => {
@@ -54,10 +67,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-stage">
-      <div className={["phone", navRight ? "has-nav-right" : "", navLeft ? "has-nav-left" : ""].filter(Boolean).join(" ")}>
+      <div className={["phone", fab ? "has-nav" : ""].filter(Boolean).join(" ")}>
         <div className="phone-scroll">{children}</div>
-        {navRight ? <FloatingNav href="/modulos" icon="widgets" label="Ir a los modulos de la app" /> : null}
-        {navLeft ? <FloatingNav href="/" icon="home" label="Volver a Inicio" /> : null}
+        {fab ? <FloatingNav href={fab.href} icon={fab.icon} label={fab.label} mark={mark} /> : null}
+        <BootScreen />
       </div>
     </div>
   );

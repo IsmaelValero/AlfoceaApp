@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-import { ReservationCard } from "@/components/ReservationCard";
+import { HomeGallery } from "@/components/HomeGallery";
+import { TopBar } from "@/components/TopBar";
 import { WeekStrip } from "@/components/WeekStrip";
-import { BellIcon, ClockIcon } from "@/components/icons";
 import { Badge } from "@/components/ui";
 import { formatRange, relativeLabel } from "@/lib/dates";
 import { getHomeData } from "@/lib/queries";
@@ -16,33 +16,12 @@ export default async function HomePage() {
 
   return (
     <main className="screen">
+      <TopBar title="Alfocea" />
+
+      <HomeGallery />
+
       <div className="split-pane">
         <div>
-      <header className="relative mb-5 flex h-11 items-center justify-center">
-        <Link
-          href="/notificaciones"
-          aria-label={
-            home.pending.length > 0
-              ? `Notificaciones, ${home.pending.length} sin confirmar`
-              : "Notificaciones"
-          }
-          className="absolute left-0 flex h-11 w-11 items-center justify-center rounded-2xl transition active:scale-95"
-        >
-          <BellIcon className="h-7 w-7" />
-          {home.pending.length > 0 ? (
-            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-canvas" />
-          ) : null}
-        </Link>
-        <h1 className="text-center text-[1.75rem] font-bold leading-none tracking-tight text-ink">Alfocea</h1>
-        <span
-          aria-label="Perfil"
-          role="img"
-          className="absolute right-0 flex h-10 w-10 items-center justify-center rounded-full bg-ink text-base font-bold text-white"
-        >
-          P
-        </span>
-      </header>
-
       {/* Resumen semanal */}
       <section className="card mb-4 p-4">
         <div className="mb-3 flex items-baseline justify-between gap-2">
@@ -63,60 +42,35 @@ export default async function HomePage() {
         </div>
 
         <div>
-      {/* Hoy */}
-      <section className="mb-5">
-        <h2 className="section-title mb-2">Hoy en el terreno</h2>
-        {home.todayReservations.length > 0 ? (
-          <ul className="space-y-2.5">
-            {home.todayReservations.map((reservation) => (
-              <li key={reservation.id}>
-                <ReservationCard reservation={reservation} showRelative={false} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="card flex items-center gap-3 px-4 py-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft">
-              <ClockIcon className="h-7 w-7" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink">Hoy no hay nadie</p>
-              <p className="text-sm text-muted">
-                {home.nextReservation
-                  ? `La proxima visita es ${relativeLabel(home.nextReservation.startDate).toLowerCase()}.`
-                  : "Tampoco hay visitas previstas."}
-              </p>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Proxima reserva */}
-      {home.nextReservation ? (
-        <section className="mb-5">
-          <h2 className="section-title mb-2">Proxima reserva</h2>
-          <div
-            className="card overflow-hidden border-l-4 p-0"
-            style={{ borderLeftColor: home.nextReservation.family?.color ?? "#123B52" }}
-          >
-            <Link href={`/reservas/${home.nextReservation.id}`} className="block px-4 py-4 transition hover:bg-sand/60">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-bold text-ink">{home.nextReservation.title}</p>
-                  <p className="mt-0.5 text-sm text-muted">
-                    {home.nextReservation.family?.name} - {home.nextReservation.zone}
+          {home.nextReservation ? (
+            <section className="mb-5">
+              <h2 className="section-title mb-2">Proxima reserva</h2>
+              <div
+                className="card overflow-hidden border-l-4 p-0"
+                style={{ borderLeftColor: home.nextReservation.family?.color ?? "var(--color-brand-dark)" }}
+              >
+                <Link href={`/reservas/${home.nextReservation.id}`} className="block px-4 py-4 transition hover:bg-sand/60">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-ink">{home.nextReservation.title}</p>
+                      <p className="mt-0.5 text-sm text-muted">
+                        {home.nextReservation.family?.name} - {home.nextReservation.zone}
+                      </p>
+                    </div>
+                    <Badge tone="brand">
+                      {home.nextReservation.startDate <= home.today && home.today <= home.nextReservation.endDate
+                        ? "Hoy"
+                        : relativeLabel(home.nextReservation.startDate, home.today)}
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-brand-dark">
+                    {formatRange(home.nextReservation.startDate, home.nextReservation.endDate)} -{" "}
+                    {home.nextReservation.guests} personas
                   </p>
-                </div>
-                <Badge tone="brand">{relativeLabel(home.nextReservation.startDate)}</Badge>
+                </Link>
               </div>
-              <p className="mt-3 text-sm font-semibold text-brand-dark">
-                {formatRange(home.nextReservation.startDate, home.nextReservation.endDate)} -{" "}
-                {home.nextReservation.guests} personas
-              </p>
-            </Link>
-          </div>
-        </section>
-      ) : null}
+            </section>
+          ) : null}
         </div>
       </div>
     </main>

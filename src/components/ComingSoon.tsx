@@ -1,14 +1,12 @@
-import { BackLink, LinkButton } from "@/components/ui";
+import { ModuleTitle } from "@/components/ui";
 
 /** Pantalla de los modulos que aun no se han desarrollado. */
 export function ComingSoon({
-  eyebrow,
   title,
   description,
   icon,
   ideas,
 }: {
-  eyebrow: string;
   title: string;
   description: string;
   icon: React.ReactNode;
@@ -16,15 +14,11 @@ export function ComingSoon({
 }) {
   return (
     <main className="screen">
-      <BackLink href="/modulos" label="Modulos" />
+      <ModuleTitle title={title} />
 
-      <div className="card px-6 py-10 text-center">
-        <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-soft">
-          {icon}
-        </span>
-        <p className="section-title">{eyebrow}</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">{title}</h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-muted">{description}</p>
+      <div className="card px-6 py-8 text-center">
+        <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-soft">{icon}</span>
+        <p className="text-sm text-muted">{description}</p>
       </div>
 
       <section className="mt-6">
@@ -38,12 +32,6 @@ export function ComingSoon({
           ))}
         </ul>
       </section>
-
-      <div className="mt-6 flex justify-center">
-        <LinkButton href="/modulos" variant="secondary">
-          Volver a los modulos
-        </LinkButton>
-      </div>
     </main>
   );
 }

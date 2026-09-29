@@ -1,23 +1,19 @@
 import Link from "next/link";
 
-import { BackLink, EmptyState, PageHeader } from "@/components/ui";
+import { AdminCreateLink } from "@/components/AdminLinks";
+import { EmptyState, ModuleTitle } from "@/components/ui";
+import { getAdminSession } from "@/lib/authz";
 import { listFamiliesWithMembers } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function FamiliesPage() {
-  const families = await listFamiliesWithMembers();
-  const people = families.reduce((sum, family) => sum + family.members.length, 0);
+  const [families, admin] = await Promise.all([listFamiliesWithMembers(), getAdminSession()]);
 
   return (
     <main className="screen">
-      <BackLink href="/modulos" label="Modulos" />
-
-      <PageHeader
-        eyebrow="Familias"
-        title="Quien somos"
-        subtitle={`${families.length} ramas familiares y ${people} personas.`}
-      />
+      <ModuleTitle title="Familias" />
+      {admin ? <AdminCreateLink href="/familias/nueva" label="Nueva familia" /> : null}
 
       {families.length === 0 ? (
         <EmptyState title="Aun no hay familias" description="Cuando se den de alta, las veras aqui." />

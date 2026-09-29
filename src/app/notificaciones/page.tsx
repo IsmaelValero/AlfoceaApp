@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { ReservationCard } from "@/components/ReservationCard";
-import { BackLink, EmptyState } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
 import { getHomeData } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +12,6 @@ export default async function NotificationsPage() {
 
   return (
     <main className="screen">
-      <BackLink href="/" label="Inicio" />
-
       <header className="mb-6 text-center">
         <p className="section-title">Alfocea</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Notificaciones</h1>
@@ -47,7 +45,7 @@ export default async function NotificationsPage() {
             </section>
           ) : null}
 
-          {home.nextReservation ? (
+          {home.nextReservation && home.nextReservation.startDate > home.today ? (
             <section>
               <h2 className="section-title mb-2">Proxima visita</h2>
               <Link href={`/reservas/${home.nextReservation.id}`} className="card block px-4 py-4">

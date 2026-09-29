@@ -4,8 +4,7 @@ import { TasksIcon } from "@/components/icons";
 export default function ProjectsPage() {
   return (
     <ComingSoon
-      eyebrow="Proyectos y tareas"
-      title="Todavia no esta listo"
+      title="Proyectos"
       description="Aqui llevaremos las obras, mejoras y tareas pendientes del terreno."
       icon={<TasksIcon className="h-7 w-7" />}
       ideas={[

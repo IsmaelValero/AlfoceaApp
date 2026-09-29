@@ -20,8 +20,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body className="min-h-dvh antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('alfocea-theme')==='amanecer'){document.documentElement.dataset.theme='amanecer';var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content','#C9653D')}}catch(e){}",
+          }}
+        />
         <Suspense fallback={null}>
           <AppShell>{children}</AppShell>
         </Suspense>

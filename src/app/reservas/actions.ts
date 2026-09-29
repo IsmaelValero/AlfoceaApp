@@ -8,6 +8,7 @@ import { formatRange } from "@/lib/dates";
 import { text, type FormState } from "@/lib/forms";
 import { DAY_CLOSE, DAY_OPEN, formatHours, isTime } from "@/lib/hours";
 import { findOverlapping, getCurrentMember } from "@/lib/queries";
+import { getAdminSession } from "@/lib/authz";
 import {
   RESERVATION_STATUSES,
   RESERVATION_ZONES,
@@ -125,13 +126,28 @@ export async function requestReservation(_prevState: FormState, formData: FormDa
   redirect(`/reservas?dia=${day}`, RedirectType.replace);
 }
 
+export async function setReservationStatus(formData: FormData) {
+  const admin = await getAdminSession();
+  if (!admin) return;
+
+  const id = text(formData, "id");
+  const status = text(formData, "status") as ReservationStatus;
+  if (!STATUS_VALUES.includes(status)) return;
+
+  await db.reservations.update(id, { status });
+  refresh(id);
+  redirect(`/reservas/${id}`);
+}
+
 export async function createReservation(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede crear reservas asi." };
+
   const parsed = await parseForm(formData);
   if ("error" in parsed) return { error: parsed.error };
 
   const created = await db.reservations.create({ ...parsed.data, createdAt: new Date().toISOString() });
   refresh(created.id);
-  // redirect lanza una excepcion de control, por eso va fuera de cualquier try.
   redirect(`/reservas/${created.id}`);
 }
 
@@ -140,6 +156,9 @@ export async function updateReservation(
   _prevState: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede editar reservas." };
+
   const parsed = await parseForm(formData, id);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -150,16 +169,10 @@ export async function updateReservation(
   redirect(`/reservas/${id}`);
 }
 
-export async function setReservationStatus(formData: FormData) {
-  const id = text(formData, "id");
-  const status = text(formData, "status") as ReservationStatus;
-  if (!STATUS_VALUES.includes(status)) return;
-
-  await db.reservations.update(id, { status });
-  refresh(id);
-}
-
 export async function deleteReservation(formData: FormData) {
+  const admin = await getAdminSession();
+  if (!admin) return;
+
   await db.reservations.remove(text(formData, "id"));
   refresh();
   redirect("/reservas");

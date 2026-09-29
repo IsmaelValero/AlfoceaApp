@@ -1,18 +1,20 @@
 @import "tailwindcss";
 
-/* Paleta oficial de Alfocea. */
+/* Estilo Anochecer: petroleo, marino y arena. Amanecer lo sustituye mas abajo. */
 @theme {
   --color-canvas: #f5f7f6;
   --color-surface: #ffffff;
   --color-ink: #123b52;
   --color-muted: #657780;
   --color-line: #dce4e7;
-  /* Relleno suave para dias libres, hover y chips. No es el acento arena. */
+  /* Relleno suave para dias libres, hover y chips. */
   --color-sand: #e7eeef;
 
   --color-brand: #236b85;
   --color-brand-dark: #123b52;
   --color-brand-soft: #e5f0f4;
+  --color-secondary: #d8b27c;
+  --color-contrast: #123b52;
 
   --color-accent: #d8b27c;
   --color-accent-soft: #f7f0e4;
@@ -122,7 +124,7 @@
 
   .field:focus {
     border-color: var(--color-brand);
-    box-shadow: 0 0 0 3px rgb(35 107 133 / 0.18);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 22%, transparent);
   }
 
   .field-label {
@@ -132,6 +134,236 @@
     font-weight: 600;
     color: var(--color-muted);
   }
+
+  /* Tarjeta de fotos. Una imagen a la vez; el dedo la pasa a un lado o al otro. */
+  .home-gallery ul {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    border-radius: 1.35rem;
+    scrollbar-width: none;
+    user-select: none;
+    cursor: grab;
+  }
+
+  .home-gallery ul.is-dragging {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+    cursor: grabbing;
+  }
+
+  .home-gallery ul::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-gallery li {
+    position: relative;
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .home-gallery img {
+    display: block;
+    height: 15rem;
+    width: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+
+  .home-gallery-shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top, rgb(18 24 28 / 0.72) 0%, rgb(18 24 28 / 0.08) 46%, transparent 62%),
+      linear-gradient(to bottom, rgb(18 24 28 / 0.38) 0%, transparent 32%);
+    pointer-events: none;
+  }
+
+  .home-gallery-kicker,
+  .home-gallery-count {
+    position: absolute;
+    top: 0.85rem;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.35);
+  }
+
+  .home-gallery-kicker {
+    left: 0.95rem;
+  }
+
+  .home-gallery-count {
+    right: 0.95rem;
+  }
+
+  .home-gallery-title {
+    position: absolute;
+    right: 0.95rem;
+    bottom: 0.9rem;
+    left: 0.95rem;
+    color: #fff;
+    font-size: 1.28rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    text-wrap: balance;
+    text-shadow: 0 1px 10px rgb(0 0 0 / 0.4);
+  }
+
+  .home-gallery-open {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .photo-viewer {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    background: #0c1418;
+    color: #fff;
+    touch-action: none;
+  }
+
+  .photo-viewer img {
+    min-height: 0;
+    flex: 1;
+    width: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .photo-viewer-close {
+    position: absolute;
+    top: max(0.75rem, env(safe-area-inset-top));
+    right: 0.75rem;
+    z-index: 1;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.16);
+    color: #fff;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .photo-viewer-caption {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem max(1rem, env(safe-area-inset-bottom));
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .photo-viewer-caption span {
+    flex: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.75;
+  }
+
+  .phone-scroll > .fill-phone {
+    min-height: 100%;
+  }
+
+  .boot-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-brand-dark);
+    color: #fff;
+  }
+
+  .boot-screen p {
+    font-size: 2.15rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .boot-bar {
+    position: relative;
+    margin-top: 1.15rem;
+    height: 3px;
+    width: 7rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.22);
+  }
+
+  .boot-bar::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    width: 40%;
+    border-radius: inherit;
+    background: var(--color-accent);
+    animation: boot-slide 1s ease-in-out infinite;
+  }
+}
+
+/* Estilo Amanecer: terracota, mostaza y crema. */
+html[data-theme="amanecer"] {
+  --color-canvas: #f7f0e3;
+  --color-surface: #fffdf8;
+  --color-ink: #593c2f;
+  --color-muted: #8a6556;
+  --color-line: #e4d0b4;
+  --color-sand: #ead8b7;
+  --color-brand: #c9653d;
+  --color-brand-dark: #593c2f;
+  --color-brand-soft: #f8e6dc;
+  --color-secondary: #d9a441;
+  --color-contrast: #236b85;
+  --color-accent: #e68a4a;
+  --color-accent-soft: #f8edd8;
+  --color-warn: #a67c2d;
+  --color-warn-soft: #f8edd0;
+  --color-danger: #a33b32;
+  --color-danger-soft: #f8e4df;
+  color-scheme: light;
+}
+
+html[data-theme="amanecer"] body {
+  background-color: #f7f0e3;
+}
+
+html[data-theme="amanecer"] .app-stage {
+  background:
+    radial-gradient(circle at 18% 0%, #fffdf8, transparent 42%),
+    #ead8b7;
+}
+
+html[data-theme="amanecer"] .phone {
+  background:
+    radial-gradient(90% 55% at 100% -8%, rgb(201 101 61 / 0.2), transparent 58%),
+    radial-gradient(80% 45% at -12% 108%, rgb(217 164 65 / 0.42), transparent 52%),
+    #f7f0e3;
+  border-color: #593c2f;
+}
+
+html[data-theme="amanecer"] .field:focus {
+  border-color: var(--color-contrast);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-contrast) 22%, transparent);
 }
 
 @layer components {
@@ -160,6 +392,7 @@
       0 28px 70px rgb(18 59 82 / 0.28),
       inset 0 0 0 1px rgb(255 255 255 / 0.12);
   }
+
 }
 
 /* Telefono girado: la pantalla es baja y ancha, el contenido se parte en dos columnas. */
@@ -182,6 +415,14 @@
     padding-block: 0.7rem 1rem;
   }
 
+  .home-gallery img {
+    height: 9.5rem;
+  }
+
+  .home-gallery-title {
+    font-size: 1.05rem;
+  }
+
   .split-pane {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
@@ -200,8 +441,16 @@
   }
 }
 
-.phone.has-nav-right .screen,
-.phone.has-nav-left .screen {
+@keyframes boot-slide {
+  from {
+    transform: translateX(-130%);
+  }
+  to {
+    transform: translateX(280%);
+  }
+}
+
+.phone.has-nav .screen {
   padding-bottom: max(5.75rem, calc(env(safe-area-inset-bottom) + 4.75rem));
 }
 

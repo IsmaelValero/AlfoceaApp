@@ -1,23 +1,20 @@
 import Link from "next/link";
 
+import { AdminCreateLink } from "@/components/AdminLinks";
 import { RulePriorityBadge } from "@/components/RuleBadge";
-import { BackLink, EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, ModuleTitle } from "@/components/ui";
+import { getAdminSession } from "@/lib/authz";
 import { listRules } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function RulesPage() {
-  const rules = await listRules();
+  const [rules, admin] = await Promise.all([listRules(), getAdminSession()]);
 
   return (
     <main className="screen">
-      <BackLink href="/modulos" label="Modulos" />
-
-      <PageHeader
-        eyebrow="Normas de uso"
-        title="Como nos organizamos"
-        subtitle="Los acuerdos que hacen que todo funcione."
-      />
+      <ModuleTitle title="Normas" />
+      {admin ? <AdminCreateLink href="/normas/nueva" label="Nueva norma" /> : null}
 
       {rules.length === 0 ? (
         <EmptyState title="Aun no hay normas" description="Cuando se publiquen, podras leerlas aqui." />

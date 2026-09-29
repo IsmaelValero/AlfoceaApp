@@ -25,7 +25,7 @@ export function ConfirmSubmit({
       onClick={(event) => {
         if (!window.confirm(message)) event.preventDefault();
       }}
-      className={BUTTON_STYLES[variant]}
+      className={`${BUTTON_STYLES[variant]} w-full`}
     >
       {pending ? pendingLabel : children}
     </button>

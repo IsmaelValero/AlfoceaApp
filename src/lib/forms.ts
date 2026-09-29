@@ -1,6 +1,7 @@
 /** Estado que devuelven todas las acciones de formulario de la app. */
 export interface FormState {
   error?: string;
+  message?: string;
 }
 
 /** Lee un campo de texto del formulario ya recortado. */

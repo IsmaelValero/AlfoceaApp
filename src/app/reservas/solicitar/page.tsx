@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { RequestReservationForm } from "@/components/RequestReservationForm";
-import { BackLink, PageHeader } from "@/components/ui";
+import { ModuleTitle } from "@/components/ui";
 import { formatLong } from "@/lib/dates";
 import { getCurrentMember } from "@/lib/queries";
 
@@ -24,8 +24,7 @@ export default async function RequestReservationPage({
 
   return (
     <main className="screen">
-      <BackLink href={`/reservas?dia=${dia}`} label="Calendario" />
-      <PageHeader eyebrow="Reservas" title="Solicitar reserva" subtitle="La revisara un administrador antes de confirmarla." />
+      <ModuleTitle title="Solicitar reserva" />
       <RequestReservationForm
         action={requestReservation}
         day={dia}

@@ -153,7 +153,7 @@ export function formatRange(start: DateKey, end: DateKey): string {
 export function relativeLabel(key: DateKey, reference: DateKey = todayKey()): string {
   const diff = daysBetween(reference, key);
   if (diff === 0) return "Hoy";
-  if (diff === 1) return "Manana";
+  if (diff === 1) return "Mañana";
   if (diff === -1) return "Ayer";
   if (diff > 1) return `En ${diff} dias`;
   return `Hace ${Math.abs(diff)} dias`;

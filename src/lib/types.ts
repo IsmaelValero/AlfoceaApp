@@ -42,7 +42,10 @@ export interface Family extends Entity {
 
 export interface Member extends Entity {
   familyId: string;
+  /** Nombre de pila. */
   name: string;
+  /** Apellidos. */
+  lastName?: string;
   role: MemberRole;
   phone?: string;
   email?: string;
@@ -86,16 +89,34 @@ export interface Reservation extends Entity {
 /* ----------------------------- Manuales y normas ----------------------------- */
 
 export const MANUAL_CATEGORIES = [
-  "Agua y riego",
-  "Electricidad",
   "Piscina",
-  "Jardin y huerto",
+  "Huerto",
   "Casa",
+  "Agua y riego",
+  "Herramientas",
   "Maquinaria",
-  "Otros",
 ] as const;
 
 export type ManualCategory = (typeof MANUAL_CATEGORIES)[number];
+
+/** Slug de la URL /manuales/seccion/[slug]. */
+export const MANUAL_SECTION_SLUGS: Record<ManualCategory, string> = {
+  Piscina: "piscina",
+  Huerto: "huerto",
+  Casa: "casa",
+  "Agua y riego": "agua-y-riego",
+  Herramientas: "herramientas",
+  Maquinaria: "maquinaria",
+};
+
+export function manualCategoryFromSlug(slug: string): ManualCategory | null {
+  const entry = Object.entries(MANUAL_SECTION_SLUGS).find(([, value]) => value === slug);
+  return (entry?.[0] as ManualCategory | undefined) ?? null;
+}
+
+export function manualSectionHref(category: ManualCategory) {
+  return `/manuales/seccion/${MANUAL_SECTION_SLUGS[category]}`;
+}
 
 export interface Manual extends Entity {
   title: string;

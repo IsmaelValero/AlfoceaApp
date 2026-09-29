@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getAdminSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
 import { RULE_CATEGORIES, type RuleCategory, type RulePriority } from "@/lib/types";
@@ -10,7 +11,6 @@ import { RULE_CATEGORIES, type RuleCategory, type RulePriority } from "@/lib/typ
 const PRIORITIES: RulePriority[] = ["alta", "media", "baja"];
 
 function refresh(id?: string) {
-  // Las normas destacadas se pintan en Inicio, hay que refrescarlo tambien.
   revalidatePath("/");
   revalidatePath("/modulos");
   revalidatePath("/normas");
@@ -41,6 +41,9 @@ function parseForm(formData: FormData) {
 }
 
 export async function createRule(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede crear normas." };
+
   const parsed = parseForm(formData);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -50,6 +53,9 @@ export async function createRule(_prevState: FormState, formData: FormData): Pro
 }
 
 export async function updateRule(id: string, _prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede editar normas." };
+
   const parsed = parseForm(formData);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -60,8 +66,10 @@ export async function updateRule(id: string, _prevState: FormState, formData: Fo
   redirect(`/normas/${id}`);
 }
 
-/** Destaca o deja de destacar la norma en la pantalla de Inicio. */
 export async function toggleRulePinned(formData: FormData) {
+  const admin = await getAdminSession();
+  if (!admin) return;
+
   const id = text(formData, "id");
   const rule = await db.rules.get(id);
   if (!rule) return;
@@ -71,6 +79,9 @@ export async function toggleRulePinned(formData: FormData) {
 }
 
 export async function deleteRule(formData: FormData) {
+  const admin = await getAdminSession();
+  if (!admin) return;
+
   await db.rules.remove(text(formData, "id"));
   refresh();
   redirect("/normas");

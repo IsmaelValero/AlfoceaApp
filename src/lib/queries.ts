@@ -9,8 +9,9 @@ import {
   type DateKey,
 } from "@/lib/dates";
 import { timesOverlap } from "@/lib/hours";
-import { CURRENT_MEMBER_ID } from "@/lib/session";
-import type { Family, Manual, Member, Reservation, Rule } from "@/lib/types";
+import { getSessionMemberId } from "@/lib/session";
+import type { Family, Manual, ManualCategory, Member, Reservation, Rule } from "@/lib/types";
+import { MANUAL_CATEGORIES } from "@/lib/types";
 
 /** Reserva con la familia y el miembro ya resueltos, lista para pintar. */
 export interface ReservationView extends Reservation {
@@ -88,7 +89,9 @@ export async function getReservation(id: string): Promise<ReservationView | null
  * Persona que tiene la sesion abierta y su familia.
  */
 export async function getCurrentMember(): Promise<{ member: Member; family: Family } | null> {
-  const member = await db.members.get(CURRENT_MEMBER_ID);
+  const memberId = await getSessionMemberId();
+  if (!memberId) return null;
+  const member = await db.members.get(memberId);
   if (!member) return null;
   const family = await db.families.get(member.familyId);
   if (!family) return null;
@@ -121,7 +124,12 @@ export async function findOverlapping(
 
 export async function listManuals(): Promise<Manual[]> {
   const manuals = await db.manuals.list();
-  return manuals.sort((a, b) => a.category.localeCompare(b.category) || a.title.localeCompare(b.title));
+  const order = new Map(MANUAL_CATEGORIES.map((category, index) => [category, index]));
+  return manuals.sort((a, b) => {
+    const left = order.get(a.category as ManualCategory) ?? MANUAL_CATEGORIES.length;
+    const right = order.get(b.category as ManualCategory) ?? MANUAL_CATEGORIES.length;
+    return left - right || a.title.localeCompare(b.title);
+  });
 }
 
 export async function getManual(id: string): Promise<Manual | null> {
@@ -202,7 +210,7 @@ export async function getHomeData(): Promise<HomeData> {
     week,
     weekReservations,
     todayReservations,
-    nextReservation: active.find((r) => r.startDate > today) ?? null,
+    nextReservation: active.find((r) => r.endDate >= today) ?? null,
     upcoming: active.filter((r) => r.endDate >= today && r.startDate <= horizon),
     pending: reservations.filter((r) => r.status === "pendiente" && r.endDate >= today),
     pinnedRules: rules.filter((r) => r.pinned),

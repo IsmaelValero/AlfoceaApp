@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { getAdminSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
 import { MANUAL_CATEGORIES, type ManualCategory } from "@/lib/types";
@@ -35,6 +36,9 @@ function parseForm(formData: FormData) {
 }
 
 export async function createManual(_prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede crear manuales." };
+
   const parsed = parseForm(formData);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -44,6 +48,9 @@ export async function createManual(_prevState: FormState, formData: FormData): P
 }
 
 export async function updateManual(id: string, _prevState: FormState, formData: FormData): Promise<FormState> {
+  const admin = await getAdminSession();
+  if (!admin) return { error: "Solo un administrador puede editar manuales." };
+
   const parsed = parseForm(formData);
   if ("error" in parsed) return { error: parsed.error };
 
@@ -55,6 +62,9 @@ export async function updateManual(id: string, _prevState: FormState, formData: 
 }
 
 export async function deleteManual(formData: FormData) {
+  const admin = await getAdminSession();
+  if (!admin) return;
+
   await db.manuals.remove(text(formData, "id"));
   refresh();
   redirect("/manuales");

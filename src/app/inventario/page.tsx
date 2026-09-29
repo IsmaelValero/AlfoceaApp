@@ -4,8 +4,7 @@ import { BoxIcon } from "@/components/icons";
 export default function InventoryPage() {
   return (
     <ComingSoon
-      eyebrow="Inventario"
-      title="Todavia no esta listo"
+      title="Inventario"
       description="Aqui apuntaremos que hay en el terreno y donde esta guardado."
       icon={<BoxIcon className="h-7 w-7" />}
       ideas={[

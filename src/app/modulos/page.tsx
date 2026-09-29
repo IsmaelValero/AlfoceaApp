@@ -1,4 +1,5 @@
 import { ModuleTile } from "@/components/ModuleTile";
+import { TopBar } from "@/components/TopBar";
 import { BookIcon, BoxIcon, CalendarIcon, ShieldIcon, TasksIcon, UsersIcon } from "@/components/icons";
 import { todayKey } from "@/lib/dates";
 import { listFamiliesWithMembers, listManuals, listReservations, listRules } from "@/lib/queries";
@@ -19,11 +20,7 @@ export default async function ModulesPage() {
 
   return (
     <main className="screen">
-      <header className="mb-6">
-        <p className="section-title">Alfocea</p>
-        <h1 className="mt-1 text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Modulos</h1>
-        <p className="mt-1 text-sm text-muted">Consulta reservas, normas y quien viene.</p>
-      </header>
+      <TopBar title="Modulos" />
 
       <div className="modules-grid grid grid-cols-2 gap-3">
         <ModuleTile

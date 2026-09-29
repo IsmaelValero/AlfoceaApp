@@ -30,6 +30,15 @@ export function Badge({
 
 /* -------------------------------- Cabeceras -------------------------------- */
 
+/** Titulo centrado de los modulos, sin subtitulo. */
+export function ModuleTitle({ title }: { title: string }) {
+  return (
+    <header className="mb-6">
+      <h1 className="text-center text-[1.75rem] font-bold leading-none tracking-tight text-ink">{title}</h1>
+    </header>
+  );
+}
+
 export function PageHeader({
   eyebrow,
   title,

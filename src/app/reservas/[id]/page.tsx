@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AdminReservationActions } from "@/components/AdminReservationActions";
 import { STATUS_LABEL, STATUS_TONE } from "@/components/ReservationCard";
-import { Badge, BackLink } from "@/components/ui";
+import { Badge, BUTTON_STYLES } from "@/components/ui";
+import { getAdminSession } from "@/lib/authz";
 import { daysBetween, formatLong, relativeLabel } from "@/lib/dates";
 import { formatHours } from "@/lib/hours";
 import { getReservation } from "@/lib/queries";
@@ -11,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ReservationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const reservation = await getReservation(id);
+  const [reservation, admin] = await Promise.all([getReservation(id), getAdminSession()]);
 
   if (!reservation) notFound();
 
@@ -22,8 +25,6 @@ export default async function ReservationDetailPage({ params }: { params: Promis
 
   return (
     <main className="screen">
-      <BackLink href="/reservas" label="Reservas" />
-
       <header className="mb-6">
         <div className="mb-2 flex items-center gap-2">
           <Badge tone={STATUS_TONE[reservation.status]}>{STATUS_LABEL[reservation.status]}</Badge>
@@ -33,10 +34,9 @@ export default async function ReservationDetailPage({ params }: { params: Promis
         <p className="mt-1 text-sm text-muted">{relativeLabel(reservation.startDate)}</p>
       </header>
 
-      {/* Fechas */}
       <section
         className="card mb-4 border-l-4 p-4"
-        style={{ borderLeftColor: reservation.family?.color ?? "#123B52" }}
+        style={{ borderLeftColor: reservation.family?.color ?? "var(--color-brand-dark)" }}
       >
         <Row label="Llegada" value={formatLong(reservation.startDate)} />
         <Row label="Salida" value={formatLong(reservation.endDate)} />
@@ -47,7 +47,6 @@ export default async function ReservationDetailPage({ params }: { params: Promis
         <Row label="Horas" value={formatHours(reservation.startTime, reservation.endTime)} />
       </section>
 
-      {/* Quien viene */}
       <section className="card mb-4 p-4">
         <Row
           label="Familia"
@@ -74,6 +73,16 @@ export default async function ReservationDetailPage({ params }: { params: Promis
           <p className="section-title mb-2">Notas</p>
           <p className="whitespace-pre-line text-[0.9375rem] leading-relaxed text-ink/85">{reservation.notes}</p>
         </section>
+      ) : null}
+
+      {admin && reservation.status === "pendiente" ? <AdminReservationActions id={reservation.id} /> : null}
+
+      {admin ? (
+        <div className="mt-4">
+          <Link href={`/reservas/${reservation.id}/editar`} className={`${BUTTON_STYLES.secondary} w-full`}>
+            Editar reserva
+          </Link>
+        </div>
       ) : null}
     </main>
   );
