@@ -63,7 +63,10 @@
     display: flex;
     min-height: 100dvh;
     justify-content: center;
-    background: #d5e0d8;
+    background-color: #d5e0d8;
+    background-image: url("/amanecer-bg.png");
+    background-size: cover;
+    background-position: center;
   }
 
   .phone {
@@ -74,10 +77,14 @@
     height: 100dvh;
     min-height: 0;
     flex-direction: column;
-    background:
-      radial-gradient(90% 55% at 100% -8%, rgb(111 143 123 / 0.26), transparent 58%),
-      radial-gradient(80% 45% at -12% 108%, rgb(214 166 107 / 0.34), transparent 52%),
-      #f0eee6;
+    background-color: #f7f5ef;
+    background-image:
+      radial-gradient(90% 55% at 100% -8%, rgb(111 143 123 / 0.12), transparent 58%),
+      radial-gradient(80% 45% at -12% 108%, rgb(214 166 107 / 0.14), transparent 52%),
+      url("/amanecer-bg.png");
+    background-size: auto, auto, cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
   .phone-scroll {
@@ -348,16 +355,18 @@ html[data-theme="anochecer"] body {
 }
 
 html[data-theme="anochecer"] .app-stage {
-  background:
-    radial-gradient(circle at 18% 0%, #ffffff, transparent 42%),
-    #d5e0e3;
+  background-color: #d5e0e3;
+  background-image:
+    radial-gradient(circle at 18% 0%, #ffffff, transparent 42%);
+  background-size: auto;
 }
 
 html[data-theme="anochecer"] .phone {
-  background:
+  background-color: #eef3f4;
+  background-image:
     radial-gradient(90% 55% at 100% -8%, rgb(120 153 168 / 0.28), transparent 58%),
-    radial-gradient(80% 45% at -12% 108%, rgb(217 168 135 / 0.32), transparent 52%),
-    #eef3f4;
+    radial-gradient(80% 45% at -12% 108%, rgb(217 168 135 / 0.32), transparent 52%);
+  background-size: auto;
   border-color: #38454a;
 }
 
@@ -377,9 +386,12 @@ html[data-theme="anochecer"] .field:focus {
   .app-stage {
     align-items: center;
     padding: 1.25rem;
-    background:
-      radial-gradient(circle at 18% 0%, #f7f5ef, transparent 42%),
-      #d5e0d8;
+    background-color: #d5e0d8;
+    background-image:
+      radial-gradient(circle at 18% 0%, rgb(247 245 239 / 0.55), transparent 42%),
+      url("/amanecer-bg.png");
+    background-size: auto, cover;
+    background-position: center;
   }
 
   .phone {
