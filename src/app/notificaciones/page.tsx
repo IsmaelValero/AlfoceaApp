@@ -1,4 +1,5 @@
 import { DecisionNotifications } from "@/components/DecisionNotifications";
+import { MarkNotificationsRead } from "@/components/MarkNotificationsRead";
 import { ReservationCard } from "@/components/ReservationCard";
 import { ReservationRequestNotice } from "@/components/ReservationRequestNotice";
 import { EmptyState, ModuleTitle } from "@/components/ui";
@@ -6,8 +7,6 @@ import { findAccountByMember } from "@/lib/accounts";
 import { getAdminSession } from "@/lib/authz";
 import { visibleDecisionNotifications } from "@/lib/notifications";
 import { getCurrentMember, getHomeData, listReservations } from "@/lib/queries";
-
-import { markAllNotificationsRead } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +18,6 @@ export default async function NotificationsPage() {
     listReservations(),
   ]);
 
-  if (current) {
-    await markAllNotificationsRead();
-  }
-
   const pendingRequests = home.pending;
   const account = current ? await findAccountByMember(current.member.id) : null;
   const dismissed = account?.dismissedNotificationIds ?? [];
@@ -32,6 +27,7 @@ export default async function NotificationsPage() {
 
     return (
       <main className="screen">
+        <MarkNotificationsRead />
         <ModuleTitle title="Notificaciones" />
 
         {hasAnything ? (
@@ -84,6 +80,7 @@ export default async function NotificationsPage() {
 
   return (
     <main className="screen">
+      <MarkNotificationsRead />
       <ModuleTitle title="Notificaciones" />
 
       {hasAnything ? (
