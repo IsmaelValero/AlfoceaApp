@@ -10,7 +10,7 @@ const FAMILY_COLUMNS = "id, name, color, notes";
 const MEMBER_COLUMNS = "id, family_id, name, last_name, role, phone, email";
 const RESERVATION_COLUMNS =
   "id, title, family_id, member_id, zone, start_date, end_date, start_time, end_time, guests, status, notes, created_at";
-const MANUAL_COLUMNS = "id, title, category, summary, content, updated_at";
+const MANUAL_COLUMNS = "id, title, category, summary, content, attachments, updated_at";
 const RULE_COLUMNS = "id, title, category, content, priority, pinned, updated_at";
 
 function mapFamily(row: Record<string, unknown>): Family {
@@ -52,6 +52,25 @@ function mapReservation(row: Record<string, unknown>): Reservation {
   };
 }
 
+function mapAttachments(value: unknown): Manual["attachments"] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const kind = row.kind === "pdf" ? "pdf" : row.kind === "image" ? "image" : null;
+      if (!kind || !row.id || !row.url || !row.path) return null;
+      return {
+        id: String(row.id),
+        name: String(row.name ?? "archivo"),
+        kind,
+        path: String(row.path),
+        url: String(row.url),
+      };
+    })
+    .filter((item): item is Manual["attachments"][number] => item !== null);
+}
+
 function mapManual(row: Record<string, unknown>): Manual {
   return {
     id: String(row.id),
@@ -59,6 +78,7 @@ function mapManual(row: Record<string, unknown>): Manual {
     category: row.category as Manual["category"],
     summary: String(row.summary),
     content: String(row.content),
+    attachments: mapAttachments(row.attachments),
     updatedAt: String(row.updated_at),
   };
 }
@@ -121,6 +141,7 @@ function toManualRow(data: Partial<Omit<Manual, "id">> & { id?: string }) {
     ...(data.category !== undefined ? { category: data.category } : {}),
     ...(data.summary !== undefined ? { summary: data.summary } : {}),
     ...(data.content !== undefined ? { content: data.content } : {}),
+    ...(data.attachments !== undefined ? { attachments: data.attachments } : {}),
     ...(data.updatedAt !== undefined ? { updated_at: data.updatedAt } : {}),
   };
 }

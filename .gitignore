@@ -17,3 +17,4 @@ Thumbs.db
 # Los datos locales son de trabajo, no se versionan.
 # Las semillas viven en src/lib/db/seed.ts
 /data/*.json
+/public/uploads/

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Badge, BUTTON_STYLES, PageHeader, RichText } from "@/components/ui";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { ManualAttachments } from "@/components/ManualAttachments";
+import { Badge, BUTTON_STYLES, PageHeader, RichText } from "@/components/ui";
 import { getAdminSession } from "@/lib/authz";
 import { getManual } from "@/lib/queries";
 import { manualSectionHref } from "@/lib/types";
@@ -28,6 +29,8 @@ export default async function ManualDetailPage({ params }: { params: Promise<{ i
       <article className="card p-5">
         <RichText content={manual.content} listStyle="steps" />
       </article>
+
+      <ManualAttachments attachments={manual.attachments ?? []} />
 
       <div className="mt-auto space-y-3 pt-6">
         {admin ? (

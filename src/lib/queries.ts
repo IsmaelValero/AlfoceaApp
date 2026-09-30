@@ -125,15 +125,19 @@ export async function findOverlapping(
 export async function listManuals(): Promise<Manual[]> {
   const manuals = await db.manuals.list();
   const order = new Map(MANUAL_CATEGORIES.map((category, index) => [category, index]));
-  return manuals.sort((a, b) => {
-    const left = order.get(a.category as ManualCategory) ?? MANUAL_CATEGORIES.length;
-    const right = order.get(b.category as ManualCategory) ?? MANUAL_CATEGORIES.length;
-    return left - right || a.title.localeCompare(b.title);
-  });
+  return manuals
+    .map((manual) => ({ ...manual, attachments: manual.attachments ?? [] }))
+    .sort((a, b) => {
+      const left = order.get(a.category as ManualCategory) ?? MANUAL_CATEGORIES.length;
+      const right = order.get(b.category as ManualCategory) ?? MANUAL_CATEGORIES.length;
+      return left - right || a.title.localeCompare(b.title);
+    });
 }
 
 export async function getManual(id: string): Promise<Manual | null> {
-  return db.manuals.get(id);
+  const manual = await db.manuals.get(id);
+  if (!manual) return null;
+  return { ...manual, attachments: manual.attachments ?? [] };
 }
 
 const PRIORITY_ORDER: Record<Rule["priority"], number> = { alta: 0, media: 1, baja: 2 };

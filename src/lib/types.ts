@@ -118,6 +118,18 @@ export function manualSectionHref(category: ManualCategory) {
   return `/manuales/seccion/${MANUAL_SECTION_SLUGS[category]}`;
 }
 
+export type ManualAttachmentKind = "image" | "pdf";
+
+export interface ManualAttachment {
+  id: string;
+  name: string;
+  kind: ManualAttachmentKind;
+  /** Ruta en Storage (o relativa en disco local). */
+  path: string;
+  /** URL publica para ver o descargar el fichero. */
+  url: string;
+}
+
 export interface Manual extends Entity {
   title: string;
   category: ManualCategory;
@@ -125,6 +137,8 @@ export interface Manual extends Entity {
   summary: string;
   /** Cuerpo del manual. Una linea que empiece por "- " se pinta como paso. */
   content: string;
+  /** Fotos y PDFs asociados al manual. */
+  attachments: ManualAttachment[];
   updatedAt: string;
 }
 

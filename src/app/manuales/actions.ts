@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
-import { MANUAL_CATEGORIES, type ManualCategory } from "@/lib/types";
+import { deleteManualAttachments, uploadManualAttachments } from "@/lib/manual-storage";
+import { MANUAL_CATEGORIES, type ManualAttachment, type ManualCategory } from "@/lib/types";
 
 function refresh(id?: string) {
   revalidatePath("/modulos");
@@ -35,6 +36,11 @@ function parseForm(formData: FormData) {
   };
 }
 
+function keptAttachments(formData: FormData, current: ManualAttachment[]) {
+  const keep = new Set(formData.getAll("keepAttachment").map(String));
+  return current.filter((item) => keep.has(item.id));
+}
+
 export async function createManual(_prevState: FormState, formData: FormData): Promise<FormState> {
   const admin = await getAdminSession();
   if (!admin) return { error: "Solo un administrador puede crear manuales." };
@@ -42,7 +48,17 @@ export async function createManual(_prevState: FormState, formData: FormData): P
   const parsed = parseForm(formData);
   if ("error" in parsed) return { error: parsed.error };
 
-  const created = await db.manuals.create(parsed.data);
+  const created = await db.manuals.create({ ...parsed.data, attachments: [] });
+  const uploaded = await uploadManualAttachments(created.id, formData.getAll("attachments"));
+  if (uploaded.error) {
+    await db.manuals.remove(created.id);
+    return { error: uploaded.error };
+  }
+
+  if (uploaded.attachments.length > 0) {
+    await db.manuals.update(created.id, { attachments: uploaded.attachments });
+  }
+
   refresh(created.id);
   redirect(`/manuales/${created.id}`);
 }
@@ -54,7 +70,18 @@ export async function updateManual(id: string, _prevState: FormState, formData: 
   const parsed = parseForm(formData);
   if ("error" in parsed) return { error: parsed.error };
 
-  const updated = await db.manuals.update(id, parsed.data);
+  const current = await db.manuals.get(id);
+  if (!current) return { error: "Ese manual ya no existe." };
+
+  const kept = keptAttachments(formData, current.attachments ?? []);
+  const uploaded = await uploadManualAttachments(id, formData.getAll("attachments"));
+  if (uploaded.error) return { error: uploaded.error };
+
+  const removed = (current.attachments ?? []).filter((item) => !kept.some((keep) => keep.id === item.id));
+  await deleteManualAttachments(removed);
+
+  const attachments: ManualAttachment[] = [...kept, ...uploaded.attachments];
+  const updated = await db.manuals.update(id, { ...parsed.data, attachments });
   if (!updated) return { error: "Ese manual ya no existe." };
 
   refresh(id);
@@ -65,7 +92,13 @@ export async function deleteManual(formData: FormData) {
   const admin = await getAdminSession();
   if (!admin) return;
 
-  await db.manuals.remove(text(formData, "id"));
+  const id = text(formData, "id");
+  const manual = await db.manuals.get(id);
+  if (manual?.attachments?.length) {
+    await deleteManualAttachments(manual.attachments);
+  }
+
+  await db.manuals.remove(id);
   refresh();
   redirect("/manuales");
 }

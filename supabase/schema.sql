@@ -52,6 +52,7 @@ create table if not exists public.manuals (
   category text not null,
   summary text not null,
   content text not null,
+  attachments jsonb not null default '[]'::jsonb,
   updated_at timestamptz not null default now()
 );
 
