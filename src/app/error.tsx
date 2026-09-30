@@ -14,9 +14,9 @@ function friendlyMessage(error: Error) {
     return raw;
   }
   if (raw.includes("omitted in production") || raw.includes("Server Components render")) {
-    return "Error al cargar datos. Revisa /api/health y que en Vercel esten NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.";
+    return "Error al cargar datos. Abre /salud y revisa que en Vercel (Production) esten NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.";
   }
-  return raw || "No hemos podido cargar esta pantalla.";
+  return raw || "No hemos podido cargar esta pantalla. Prueba /salud para ver el diagnostico.";
 }
 
 export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
