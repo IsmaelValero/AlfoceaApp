@@ -6,7 +6,14 @@ import { findAccountByEmail, findAccountByMember, saveAccount } from "@/lib/acco
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
 import { hashPassword, verifyPassword } from "@/lib/passwords";
-import { clearSessionCookie, getSessionMemberId } from "@/lib/session";
+import { hasAdminRole } from "@/lib/authz";
+import { getCurrentMember } from "@/lib/queries";
+import {
+  clearSessionCookie,
+  getSessionMemberId,
+  isViewingAsUser,
+  setViewAsUser,
+} from "@/lib/session";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -55,4 +62,14 @@ export async function updatePassword(_prev: FormState, formData: FormData): Prom
 export async function logout() {
   await clearSessionCookie();
   redirect("/login");
+}
+
+/** Alterna la vista de un administrador entre Administrador y Usuario. */
+export async function toggleAdminViewMode() {
+  const current = await getCurrentMember();
+  if (!current || !hasAdminRole(current.member)) redirect("/perfil");
+
+  const asUser = await isViewingAsUser();
+  await setViewAsUser(!asUser);
+  redirect("/perfil");
 }

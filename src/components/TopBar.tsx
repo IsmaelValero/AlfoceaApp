@@ -3,19 +3,19 @@ import Link from "next/link";
 import { BellIcon } from "@/components/icons";
 import { SyncMark } from "@/components/SyncMark";
 import { findAccountByMember } from "@/lib/accounts";
-import { isAdmin } from "@/lib/authz";
+import { getAdminSession } from "@/lib/authz";
 import { unreadAdminRequestCount, unreadDecisionCount } from "@/lib/notifications";
 import { getCurrentMember, getHomeData, listReservations } from "@/lib/queries";
 
 /** Cabecera con campana, titulo centrado y acceso al perfil. */
 export async function TopBar({ title }: { title: string }) {
-  const [home, current, reservations] = await Promise.all([
+  const [home, current, reservations, admin] = await Promise.all([
     getHomeData(),
     getCurrentMember(),
     listReservations(),
+    getAdminSession(),
   ]);
   const initial = (current?.member.name ?? "?").slice(0, 1).toUpperCase();
-  const admin = isAdmin(current?.member);
 
   let lastReadAt: string | undefined;
   let dismissed: string[] = [];

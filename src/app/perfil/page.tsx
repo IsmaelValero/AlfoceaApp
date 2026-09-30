@@ -4,9 +4,10 @@ import Link from "next/link";
 
 import { SyncMark } from "@/components/SyncMark";
 import { Badge, BUTTON_STYLES, ModuleTitle } from "@/components/ui";
-import { isAdmin } from "@/lib/authz";
+import { hasAdminRole } from "@/lib/authz";
 import { getCurrentMember } from "@/lib/queries";
-import { logout } from "@/app/perfil/actions";
+import { isViewingAsUser } from "@/lib/session";
+import { logout, toggleAdminViewMode } from "@/app/perfil/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,8 @@ export default async function ProfilePage() {
 
   const initial = current.member.name.slice(0, 1).toUpperCase();
   const fullName = [current.member.name, current.member.lastName].filter(Boolean).join(" ");
-  const admin = isAdmin(current.member);
+  const canSwitch = hasAdminRole(current.member);
+  const viewingAsUser = canSwitch ? await isViewingAsUser() : false;
 
   return (
     <main className="screen fill-phone flex flex-col">
@@ -28,11 +30,31 @@ export default async function ProfilePage() {
           <dt className="text-sm text-muted">Familia</dt>
           <dd className="text-right text-sm font-semibold text-ink">{current.family.name}</dd>
         </div>
-        {admin ? (
-          <div className="flex items-center justify-between gap-4 border-t border-line pt-2">
-            <span className="text-sm text-muted">Perfil</span>
-            <Badge tone="brand">Administrador</Badge>
-          </div>
+        {canSwitch ? (
+          <form action={toggleAdminViewMode} className="border-t border-line pt-2">
+            <button
+              type="submit"
+              className="flex w-full items-center justify-between gap-4 text-left transition active:scale-[0.99]"
+              aria-label={
+                viewingAsUser
+                  ? "Cambiar a modo administrador"
+                  : "Cambiar a modo usuario"
+              }
+            >
+              <span className="text-sm text-muted">Perfil</span>
+              <span className="inline-flex items-center gap-1.5">
+                <Badge tone={viewingAsUser ? "neutral" : "brand"}>
+                  {viewingAsUser ? "Usuario" : "Administrador"}
+                </Badge>
+                <span className="text-sm font-semibold text-brand" aria-hidden="true">
+                  ⇄
+                </span>
+              </span>
+            </button>
+            <p className="mt-1.5 text-right text-xs text-muted">
+              Toca para ver la app como {viewingAsUser ? "administrador" : "usuario"}
+            </p>
+          </form>
         ) : null}
       </section>
 
