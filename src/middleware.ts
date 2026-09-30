@@ -14,6 +14,7 @@ function isPublicAsset(pathname: string) {
     pathname === "/apple-icon" ||
     pathname.startsWith("/apple-icon.") ||
     pathname === "/alfocea-logo.png" ||
+    pathname === "/login-bg.png" ||
     pathname.startsWith("/galeria/")
   ) {
     return true;
@@ -44,6 +45,6 @@ export const config = {
     /*
      * Auth en paginas de la app. Se excluyen assets, iconos metadata y la galeria.
      */
-    "/((?!_next/static|_next/image|favicon.ico|favicon.png|icon(?:\\..*)?|apple-icon(?:\\..*)?|alfocea-logo.png|galeria/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|favicon.png|icon(?:\\..*)?|apple-icon(?:\\..*)?|alfocea-logo.png|login-bg.png|galeria/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
