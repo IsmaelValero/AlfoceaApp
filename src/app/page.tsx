@@ -1,18 +1,39 @@
 import Link from "next/link";
 
 import { HomeGallery } from "@/components/HomeGallery";
+import { ReservationCard } from "@/components/ReservationCard";
 import { TopBar } from "@/components/TopBar";
 import { WeekStrip } from "@/components/WeekStrip";
 import { Badge } from "@/components/ui";
 import { formatRange, relativeLabel } from "@/lib/dates";
-import { getHomeData } from "@/lib/queries";
+import { getCurrentMember, getHomeData, listReservations } from "@/lib/queries";
 
 // Los datos viven en disco y cambian al usar la app: nada de cache estatica.
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const home = await getHomeData();
+  const [home, current, reservations] = await Promise.all([
+    getHomeData(),
+    getCurrentMember(),
+    listReservations(),
+  ]);
   const { stats } = home;
+
+  const myReservations = current
+    ? reservations
+        .filter(
+          (reservation) =>
+            reservation.memberId === current.member.id &&
+            reservation.status !== "cancelada" &&
+            (reservation.endDate >= home.today || reservation.status === "pendiente"),
+        )
+        .sort(
+          (a, b) =>
+            a.startDate.localeCompare(b.startDate) ||
+            (a.startTime ?? "").localeCompare(b.startTime ?? "") ||
+            0,
+        )
+    : [];
 
   return (
     <main className="screen">
@@ -22,23 +43,41 @@ export default async function HomePage() {
 
       <div className="split-pane">
         <div>
-      {/* Resumen semanal */}
-      <section className="card mb-4 p-4">
-        <div className="mb-3 flex items-baseline justify-between gap-2">
-          <h2 className="font-bold text-ink">Esta semana</h2>
-          <Link href="/reservas" className="text-xs font-semibold text-brand hover:underline">
-            Ver calendario
-          </Link>
-        </div>
+          {/* Resumen semanal */}
+          <section className="card mb-4 p-4">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="font-bold text-ink">Esta semana</h2>
+              <Link href="/reservas" className="text-xs font-semibold text-brand hover:underline">
+                Ver calendario
+              </Link>
+            </div>
 
-        <WeekStrip week={home.week} today={home.today} />
+            <WeekStrip week={home.week} today={home.today} />
 
-        <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3 text-center">
-          <Stat label="Dias ocupados" value={`${stats.daysOccupiedThisWeek}/7`} />
-          <Stat label="Reservas" value={home.weekReservations.length} />
-          <Stat label="Personas" value={stats.peopleThisWeek} />
-        </dl>
-      </section>
+            <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3 text-center">
+              <Stat label="Dias ocupados" value={`${stats.daysOccupiedThisWeek}/7`} />
+              <Stat label="Reservas" value={home.weekReservations.length} />
+              <Stat label="Personas" value={stats.peopleThisWeek} />
+            </dl>
+          </section>
+
+          {myReservations.length > 0 ? (
+            <section className="mb-5">
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <h2 className="section-title">Tus reservas</h2>
+                <Link href="/reservas" className="text-xs font-semibold text-brand hover:underline">
+                  Ver todas
+                </Link>
+              </div>
+              <ul className="space-y-2.5">
+                {myReservations.map((reservation) => (
+                  <li key={reservation.id}>
+                    <ReservationCard reservation={reservation} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
 
         <div>
