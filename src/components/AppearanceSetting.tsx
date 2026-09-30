@@ -6,24 +6,24 @@ const STORAGE_KEY = "alfocea-theme";
 type Theme = "anochecer" | "amanecer";
 
 const OPTIONS: { id: Theme; label: string; swatches: [string, string, string] }[] = [
-  { id: "anochecer", label: "Anochecer", swatches: ["#7899A8", "#B8CBD2", "#D9A887"] },
   { id: "amanecer", label: "Amanecer", swatches: ["#6F8F7B", "#AFC2B4", "#D6A66B"] },
+  { id: "anochecer", label: "Anochecer", swatches: ["#7899A8", "#B8CBD2", "#D9A887"] },
 ];
 
 function applyTheme(theme: Theme) {
-  if (theme === "amanecer") document.documentElement.dataset.theme = "amanecer";
+  if (theme === "anochecer") document.documentElement.dataset.theme = "anochecer";
   else delete document.documentElement.dataset.theme;
   localStorage.setItem(STORAGE_KEY, theme);
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", theme === "amanecer" ? "#6F8F7B" : "#7899A8");
+    ?.setAttribute("content", theme === "anochecer" ? "#7899A8" : "#6F8F7B");
 }
 
 export function AppearanceSetting() {
-  const [theme, setTheme] = useState<Theme>("anochecer");
+  const [theme, setTheme] = useState<Theme>("amanecer");
 
   useEffect(() => {
-    setTheme(document.documentElement.dataset.theme === "amanecer" ? "amanecer" : "anochecer");
+    setTheme(document.documentElement.dataset.theme === "anochecer" ? "anochecer" : "amanecer");
   }, []);
 
   function choose(next: Theme) {
