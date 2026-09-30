@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
-/* Estilo Anochecer: petroleo, marino y arena. Amanecer lo sustituye mas abajo. */
+/* Estilo Anochecer: azul niebla + melocoton. Amanecer lo sustituye mas abajo. */
 @theme {
-  --color-canvas: #f5f7f6;
+  --color-canvas: #f7f8f6;
   --color-surface: #ffffff;
-  --color-ink: #123b52;
-  --color-muted: #657780;
-  --color-line: #dce4e7;
+  --color-ink: #38454a;
+  --color-muted: #6a787e;
+  --color-line: #e1e6e7;
   /* Relleno suave para dias libres, hover y chips. */
-  --color-sand: #e7eeef;
+  --color-sand: #e8eeef;
 
-  --color-brand: #236b85;
-  --color-brand-dark: #123b52;
-  --color-brand-soft: #e5f0f4;
-  --color-secondary: #d8b27c;
-  --color-contrast: #123b52;
+  --color-brand: #7899a8;
+  --color-brand-dark: #38454a;
+  --color-brand-soft: #e6eef1;
+  --color-secondary: #b8cbd2;
+  --color-contrast: #7899a8;
 
-  --color-accent: #d8b27c;
-  --color-accent-soft: #f7f0e4;
+  --color-accent: #d9a887;
+  --color-accent-soft: #f6eee6;
 
-  --color-warn: #b4801f;
-  --color-warn-soft: #fdf3dd;
+  --color-warn: #b48a4a;
+  --color-warn-soft: #f6eedf;
   --color-danger: #b23b3b;
   --color-danger-soft: #fbeaea;
 
@@ -63,7 +63,7 @@
     display: flex;
     min-height: 100dvh;
     justify-content: center;
-    background: #d5dee2;
+    background: #d5e0e3;
   }
 
   .phone {
@@ -75,9 +75,9 @@
     min-height: 0;
     flex-direction: column;
     background:
-      radial-gradient(90% 55% at 100% -8%, rgb(35 107 133 / 0.22), transparent 58%),
-      radial-gradient(80% 45% at -12% 108%, rgb(216 178 124 / 0.34), transparent 52%),
-      #e4eef2;
+      radial-gradient(90% 55% at 100% -8%, rgb(120 153 168 / 0.28), transparent 58%),
+      radial-gradient(80% 45% at -12% 108%, rgb(217 168 135 / 0.32), transparent 52%),
+      #eef3f4;
   }
 
   .phone-scroll {
@@ -101,7 +101,7 @@
     background-color: var(--color-surface);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-card);
-    box-shadow: 0 1px 2px rgb(18 59 82 / 0.05);
+    box-shadow: 0 1px 2px rgb(56 69 74 / 0.05);
   }
 
   .section-title {
@@ -321,44 +321,44 @@
   }
 }
 
-/* Estilo Amanecer: terracota, mostaza y crema. */
+/* Estilo Amanecer: salvia + crema. */
 html[data-theme="amanecer"] {
-  --color-canvas: #f7f0e3;
-  --color-surface: #fffdf8;
-  --color-ink: #593c2f;
-  --color-muted: #8a6556;
-  --color-line: #e4d0b4;
-  --color-sand: #ead8b7;
-  --color-brand: #c9653d;
-  --color-brand-dark: #593c2f;
-  --color-brand-soft: #f8e6dc;
-  --color-secondary: #d9a441;
-  --color-contrast: #236b85;
-  --color-accent: #e68a4a;
-  --color-accent-soft: #f8edd8;
-  --color-warn: #a67c2d;
-  --color-warn-soft: #f8edd0;
+  --color-canvas: #f7f5ef;
+  --color-surface: #ffffff;
+  --color-ink: #34423a;
+  --color-muted: #6a7a70;
+  --color-line: #e2e6e0;
+  --color-sand: #e8ebe4;
+  --color-brand: #6f8f7b;
+  --color-brand-dark: #34423a;
+  --color-brand-soft: #e4ede7;
+  --color-secondary: #afc2b4;
+  --color-contrast: #6f8f7b;
+  --color-accent: #d6a66b;
+  --color-accent-soft: #f5ebdd;
+  --color-warn: #a67c3d;
+  --color-warn-soft: #f5ebdd;
   --color-danger: #a33b32;
   --color-danger-soft: #f8e4df;
   color-scheme: light;
 }
 
 html[data-theme="amanecer"] body {
-  background-color: #f7f0e3;
+  background-color: #f7f5ef;
 }
 
 html[data-theme="amanecer"] .app-stage {
   background:
-    radial-gradient(circle at 18% 0%, #fffdf8, transparent 42%),
-    #ead8b7;
+    radial-gradient(circle at 18% 0%, #ffffff, transparent 42%),
+    #d5e0d8;
 }
 
 html[data-theme="amanecer"] .phone {
   background:
-    radial-gradient(90% 55% at 100% -8%, rgb(201 101 61 / 0.2), transparent 58%),
-    radial-gradient(80% 45% at -12% 108%, rgb(217 164 65 / 0.42), transparent 52%),
-    #f7f0e3;
-  border-color: #593c2f;
+    radial-gradient(90% 55% at 100% -8%, rgb(111 143 123 / 0.26), transparent 58%),
+    radial-gradient(80% 45% at -12% 108%, rgb(214 166 107 / 0.34), transparent 52%),
+    #f0eee6;
+  border-color: #34423a;
 }
 
 html[data-theme="amanecer"] .field:focus {
@@ -379,17 +379,17 @@ html[data-theme="amanecer"] .field:focus {
     padding: 1.25rem;
     background:
       radial-gradient(circle at 18% 0%, #eef3f4, transparent 42%),
-      #d5dee2;
+      #d5e0e3;
   }
 
   .phone {
     height: min(844px, calc(100dvh - 2.5rem));
     min-height: 0;
     overflow: hidden;
-    border: 10px solid #123b52;
+    border: 10px solid var(--color-brand-dark);
     border-radius: 2.25rem;
     box-shadow:
-      0 28px 70px rgb(18 59 82 / 0.28),
+      0 28px 70px rgb(56 69 74 / 0.22),
       inset 0 0 0 1px rgb(255 255 255 / 0.12);
   }
 

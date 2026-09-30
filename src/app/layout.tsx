@@ -15,7 +15,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#123B52",
+  themeColor: "#7899A8",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{if(localStorage.getItem('alfocea-theme')==='amanecer'){document.documentElement.dataset.theme='amanecer';var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content','#C9653D')}}catch(e){}",
+              "try{if(localStorage.getItem('alfocea-theme')==='amanecer'){document.documentElement.dataset.theme='amanecer';var m=document.querySelector('meta[name=\"theme-color\"]');if(m)m.setAttribute('content','#6F8F7B')}}catch(e){}",
           }}
         />
         <Suspense fallback={null}>

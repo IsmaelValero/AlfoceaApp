@@ -51,9 +51,6 @@ export default async function ProfilePage() {
                 </span>
               </span>
             </button>
-            <p className="mt-1.5 text-right text-xs text-muted">
-              Toca para ver la app como {viewingAsUser ? "administrador" : "usuario"}
-            </p>
           </form>
         ) : null}
       </section>

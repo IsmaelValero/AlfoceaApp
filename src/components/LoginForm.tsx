@@ -30,7 +30,7 @@ export function LoginForm({
           spellCheck={false}
           required
           className="field"
-          placeholder="pepe o pepe@alfocea.es"
+          placeholder="Usuario o email"
           value={username}
           onChange={(event) => setUsername(event.target.value)}
         />
