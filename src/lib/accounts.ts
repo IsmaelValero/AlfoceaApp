@@ -31,6 +31,11 @@ function run<T>(task: () => Promise<T>): Promise<T> {
   return result;
 }
 
+function isMissingColumnError(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return error.code === "42703" || /column .* does not exist/i.test(error.message ?? "");
+}
+
 function parseDismissed(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.map(String).filter(Boolean);
@@ -55,6 +60,32 @@ async function accountSelectColumns() {
   const { error } = await getSupabase().from("accounts").select("notification_last_read_at").limit(1);
   accountNotifyReady = !error;
   return accountNotifyReady ? ACCOUNT_COLUMNS : ACCOUNT_COLUMNS_BASE;
+}
+
+async function selectAccount(filter: { column: string; value: string }) {
+  const preferred = await accountSelectColumns();
+  const first = await getSupabase()
+    .from("accounts")
+    .select(preferred)
+    .eq(filter.column, filter.value)
+    .maybeSingle();
+
+  if (!first.error) {
+    return first.data ? mapAccount(first.data as unknown as Record<string, unknown>) : null;
+  }
+
+  if (isMissingColumnError(first.error)) {
+    accountNotifyReady = false;
+    const retry = await getSupabase()
+      .from("accounts")
+      .select(ACCOUNT_COLUMNS_BASE)
+      .eq(filter.column, filter.value)
+      .maybeSingle();
+    if (retry.error) throw retry.error;
+    return retry.data ? mapAccount(retry.data as unknown as Record<string, unknown>) : null;
+  }
+
+  throw first.error;
 }
 
 async function readLocal(): Promise<Account[]> {
@@ -85,7 +116,15 @@ export function listAccounts() {
     if (hasSupabaseEnv()) {
       const columns = await accountSelectColumns();
       const { data, error } = await getSupabase().from("accounts").select(columns);
-      if (error) throw error;
+      if (error) {
+        if (isMissingColumnError(error)) {
+          accountNotifyReady = false;
+          const retry = await getSupabase().from("accounts").select(ACCOUNT_COLUMNS_BASE);
+          if (retry.error) throw retry.error;
+          return (retry.data ?? []).map((row) => mapAccount(row as unknown as Record<string, unknown>));
+        }
+        throw error;
+      }
       return (data ?? []).map((row) => mapAccount(row as unknown as Record<string, unknown>));
     }
     return readLocal();
@@ -95,16 +134,7 @@ export function listAccounts() {
 export function findAccountByUsername(username: string) {
   const needle = username.trim().toLowerCase();
   return run(async () => {
-    if (hasSupabaseEnv()) {
-      const columns = await accountSelectColumns();
-      const { data, error } = await getSupabase()
-        .from("accounts")
-        .select(columns)
-        .eq("username", needle)
-        .maybeSingle();
-      if (error) throw error;
-      return data ? mapAccount(data as unknown as Record<string, unknown>) : null;
-    }
+    if (hasSupabaseEnv()) return selectAccount({ column: "username", value: needle });
     return (await readLocal()).find((account) => account.username === needle) ?? null;
   });
 }
@@ -112,16 +142,7 @@ export function findAccountByUsername(username: string) {
 export function findAccountByEmail(email: string) {
   const needle = email.trim().toLowerCase();
   return run(async () => {
-    if (hasSupabaseEnv()) {
-      const columns = await accountSelectColumns();
-      const { data, error } = await getSupabase()
-        .from("accounts")
-        .select(columns)
-        .eq("email", needle)
-        .maybeSingle();
-      if (error) throw error;
-      return data ? mapAccount(data as unknown as Record<string, unknown>) : null;
-    }
+    if (hasSupabaseEnv()) return selectAccount({ column: "email", value: needle });
     return (await readLocal()).find((account) => account.email === needle) ?? null;
   });
 }
@@ -135,16 +156,7 @@ export function findAccountByLogin(login: string) {
 
 export function findAccountByMember(memberId: string) {
   return run(async () => {
-    if (hasSupabaseEnv()) {
-      const columns = await accountSelectColumns();
-      const { data, error } = await getSupabase()
-        .from("accounts")
-        .select(columns)
-        .eq("member_id", memberId)
-        .maybeSingle();
-      if (error) throw error;
-      return data ? mapAccount(data as unknown as Record<string, unknown>) : null;
-    }
+    if (hasSupabaseEnv()) return selectAccount({ column: "member_id", value: memberId });
     return (await readLocal()).find((account) => account.memberId === memberId) ?? null;
   });
 }
@@ -157,11 +169,11 @@ export function saveAccount(
 ) {
   return run(async () => {
     if (hasSupabaseEnv()) {
-      const columns = await accountSelectColumns();
+      await accountSelectColumns();
       const row: Record<string, unknown> = {};
       if (patch.email !== undefined) row.email = patch.email;
       if (patch.passwordHash !== undefined) row.password_hash = patch.passwordHash;
-      if (accountNotifyReady !== false) {
+      if (accountNotifyReady === true) {
         if (patch.notificationLastReadAt !== undefined) {
           row.notification_last_read_at = patch.notificationLastReadAt;
         }
@@ -170,13 +182,25 @@ export function saveAccount(
         }
       }
 
+      if (Object.keys(row).length === 0) {
+        return findAccountByMember(memberId);
+      }
+
+      const columns = accountNotifyReady === true ? ACCOUNT_COLUMNS : ACCOUNT_COLUMNS_BASE;
       const { data, error } = await getSupabase()
         .from("accounts")
         .update(row)
         .eq("member_id", memberId)
         .select(columns)
         .maybeSingle();
-      if (error) throw error;
+
+      if (error) {
+        if (isMissingColumnError(error)) {
+          accountNotifyReady = false;
+          return findAccountByMember(memberId);
+        }
+        throw error;
+      }
       return data ? mapAccount(data as unknown as Record<string, unknown>) : null;
     }
 
@@ -189,7 +213,9 @@ export function saveAccount(
   });
 }
 
-export function createAccount(input: Omit<Account, "passwordHash" | "dismissedNotificationIds"> & { password?: string }) {
+export function createAccount(
+  input: Omit<Account, "passwordHash" | "dismissedNotificationIds"> & { password?: string },
+) {
   return run(async () => {
     const account: Account = {
       memberId: input.memberId,
@@ -200,16 +226,17 @@ export function createAccount(input: Omit<Account, "passwordHash" | "dismissedNo
     };
 
     if (hasSupabaseEnv()) {
-      const columns = await accountSelectColumns();
+      await accountSelectColumns();
       const insert: Record<string, unknown> = {
         member_id: account.memberId,
         username: account.username,
         email: account.email,
         password_hash: account.passwordHash,
       };
-      if (accountNotifyReady !== false) {
+      if (accountNotifyReady === true) {
         insert.dismissed_notification_ids = [];
       }
+      const columns = accountNotifyReady === true ? ACCOUNT_COLUMNS : ACCOUNT_COLUMNS_BASE;
       const { data, error } = await getSupabase().from("accounts").insert(insert).select(columns).single();
       if (error) throw error;
       return mapAccount(data as unknown as Record<string, unknown>);

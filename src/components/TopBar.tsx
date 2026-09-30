@@ -16,9 +16,18 @@ export async function TopBar({ title }: { title: string }) {
   ]);
   const initial = (current?.member.name ?? "?").slice(0, 1).toUpperCase();
   const admin = isAdmin(current?.member);
-  const account = current ? await findAccountByMember(current.member.id) : null;
-  const lastReadAt = account?.notificationLastReadAt;
-  const dismissed = account?.dismissedNotificationIds ?? [];
+
+  let lastReadAt: string | undefined;
+  let dismissed: string[] = [];
+  if (current) {
+    try {
+      const account = await findAccountByMember(current.member.id);
+      lastReadAt = account?.notificationLastReadAt;
+      dismissed = account?.dismissedNotificationIds ?? [];
+    } catch {
+      // Sin columnas de notificaciones aun, la app sigue cargando.
+    }
+  }
 
   const alertCount = admin
     ? unreadAdminRequestCount(home.pending, lastReadAt)
@@ -31,9 +40,7 @@ export async function TopBar({ title }: { title: string }) {
       <SyncMark mark={initial} />
       <Link
         href="/notificaciones"
-        aria-label={
-          alertCount > 0 ? `Notificaciones, ${alertCount} sin leer` : "Notificaciones"
-        }
+        aria-label={alertCount > 0 ? `Notificaciones, ${alertCount} sin leer` : "Notificaciones"}
         className="absolute left-0 flex h-11 w-11 items-center justify-center rounded-2xl transition active:scale-95"
       >
         <BellIcon className="h-7 w-7" />

@@ -287,14 +287,34 @@ class ReservationsCollection implements Collection<Reservation> {
   async list(): Promise<Reservation[]> {
     const columns = await reservationsSelectColumns();
     const { data, error } = await getSupabase().from("reservations").select(columns);
-    if (error) throw error;
+    if (error) {
+      if (error.code === "42703" || /resolved_at/i.test(error.message)) {
+        reservationsResolvedReady = false;
+        const retry = await getSupabase().from("reservations").select(RESERVATION_COLUMNS_BASE);
+        if (retry.error) throw retry.error;
+        return (retry.data ?? []).map((row) => mapReservation(row as unknown as Record<string, unknown>));
+      }
+      throw error;
+    }
     return (data ?? []).map((row) => mapReservation(row as unknown as Record<string, unknown>));
   }
 
   async get(id: string): Promise<Reservation | null> {
     const columns = await reservationsSelectColumns();
     const { data, error } = await getSupabase().from("reservations").select(columns).eq("id", id).maybeSingle();
-    if (error) throw error;
+    if (error) {
+      if (error.code === "42703" || /resolved_at/i.test(error.message)) {
+        reservationsResolvedReady = false;
+        const retry = await getSupabase()
+          .from("reservations")
+          .select(RESERVATION_COLUMNS_BASE)
+          .eq("id", id)
+          .maybeSingle();
+        if (retry.error) throw retry.error;
+        return retry.data ? mapReservation(retry.data as unknown as Record<string, unknown>) : null;
+      }
+      throw error;
+    }
     return data ? mapReservation(data as unknown as Record<string, unknown>) : null;
   }
 
@@ -309,7 +329,7 @@ class ReservationsCollection implements Collection<Reservation> {
 
   async update(id: string, patch: Partial<Omit<Reservation, "id">>): Promise<Reservation | null> {
     const columns = await reservationsSelectColumns();
-    const row = toReservationRow(patch, reservationsResolvedReady !== false);
+    const row = toReservationRow(patch, reservationsResolvedReady === true);
     const { data, error } = await getSupabase()
       .from("reservations")
       .update(row)

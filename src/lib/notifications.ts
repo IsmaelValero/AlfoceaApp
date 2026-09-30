@@ -43,12 +43,20 @@ export function unreadAdminRequestCount(
 }
 
 export async function markNotificationsRead(memberId: string) {
-  await saveAccount(memberId, { notificationLastReadAt: new Date().toISOString() });
+  try {
+    await saveAccount(memberId, { notificationLastReadAt: new Date().toISOString() });
+  } catch {
+    // Si faltan columnas en Supabase, no bloqueamos la pantalla.
+  }
 }
 
 export async function dismissNotification(memberId: string, reservationId: string) {
-  const account = await findAccountByMember(memberId);
-  if (!account) return;
-  const next = Array.from(new Set([...(account.dismissedNotificationIds ?? []), reservationId]));
-  await saveAccount(memberId, { dismissedNotificationIds: next });
+  try {
+    const account = await findAccountByMember(memberId);
+    if (!account) return;
+    const next = Array.from(new Set([...(account.dismissedNotificationIds ?? []), reservationId]));
+    await saveAccount(memberId, { dismissedNotificationIds: next });
+  } catch {
+    // Idem: sin columnas de notificacion, ignoramos el descarte persistente.
+  }
 }
