@@ -5,6 +5,10 @@ import { readSession, SESSION_COOKIE } from "@/lib/session-token";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Las rutas API no pasan por la pantalla de login.
+  if (pathname.startsWith("/api/")) return NextResponse.next();
+
   const memberId = await readSession(request.cookies.get(SESSION_COOKIE)?.value);
 
   if (pathname === "/login") {

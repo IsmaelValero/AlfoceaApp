@@ -4,11 +4,17 @@ import { BUTTON_STYLES } from "@/components/ui";
 
 function friendlyMessage(error: Error) {
   const raw = error.message || "";
-  if (raw.includes("Supabase") || raw.includes("SUPABASE")) {
-    return "Falta configurar Supabase en Vercel (URL y service role key).";
+  if (raw.includes("DATABASE_URL")) {
+    return "Esta app no usa DATABASE_URL. En Vercel pon NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.";
+  }
+  if (raw.includes("NEXT_PUBLIC_SUPABASE_URL") || raw.includes("SUPABASE_SERVICE_ROLE_KEY") || raw.includes("Faltan")) {
+    return raw;
+  }
+  if (raw.includes("Supabase") || raw.includes("SUPABASE") || raw.includes("supabase.co")) {
+    return raw;
   }
   if (raw.includes("omitted in production") || raw.includes("Server Components render")) {
-    return "Ha fallado la carga de datos. Revisa que Supabase este configurado en Vercel y vuelve a intentar.";
+    return "Error al cargar datos. Revisa /api/health y que en Vercel esten NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.";
   }
   return raw || "No hemos podido cargar esta pantalla.";
 }
