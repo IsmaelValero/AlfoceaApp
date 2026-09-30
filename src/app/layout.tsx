@@ -9,6 +9,14 @@ export const metadata: Metadata = {
   title: "Alfocea",
   description: "Mini CRM familiar para gestionar el terreno: reservas, manuales, normas y familias.",
   applicationName: "Alfocea",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.png", type: "image/png", sizes: "48x48" },
+      { url: "/alfocea-logo.png", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+  },
 };
 
 export const viewport: Viewport = {
