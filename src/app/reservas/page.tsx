@@ -24,9 +24,7 @@ export default async function ReservationsPage({
   const today = todayKey();
   const initialDay = dia && DATE_PATTERN.test(dia) ? dia : today;
   const mine = current ? ownUpcoming(reservations, current.member.id, today) : [];
-  const pending = admin
-    ? reservations.filter((r) => r.status === "pendiente" && r.endDate >= today)
-    : [];
+  const pending = admin ? reservations.filter((r) => r.status === "pendiente") : [];
 
   return (
     <main className="screen">
@@ -68,7 +66,7 @@ export default async function ReservationsPage({
 function ownUpcoming(reservations: ReservationView[], memberId: string, today: string) {
   return reservations.filter((reservation) => {
     if (reservation.memberId !== memberId) return false;
-    if (reservation.status === "pendiente") return reservation.endDate >= today;
+    if (reservation.status === "pendiente") return true;
     if (reservation.status === "confirmada") return reservation.startDate > today;
     return false;
   });

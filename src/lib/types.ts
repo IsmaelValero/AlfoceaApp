@@ -84,6 +84,8 @@ export interface Reservation extends Entity {
   status: ReservationStatus;
   notes?: string;
   createdAt: string;
+  /** Cuando el admin acepto o rechazo (para avisar al solicitante). */
+  resolvedAt?: string;
 }
 
 /* ----------------------------- Manuales y normas ----------------------------- */

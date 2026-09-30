@@ -9,12 +9,19 @@ export interface Account {
   username: string;
   email: string;
   passwordHash: string;
+  notificationLastReadAt?: string;
+  dismissedNotificationIds: string[];
 }
 
 /** Contraseña por defecto de las cuentas nuevas / seed. */
 export const INITIAL_PASSWORD = "alfocea123";
 
 const FILE = path.join(process.cwd(), "data", "accounts.json");
+const ACCOUNT_COLUMNS =
+  "member_id, username, email, password_hash, notification_last_read_at, dismissed_notification_ids";
+const ACCOUNT_COLUMNS_BASE = "member_id, username, email, password_hash";
+
+let accountNotifyReady: boolean | null = null;
 
 let queue: Promise<unknown> = Promise.resolve();
 
@@ -24,20 +31,41 @@ function run<T>(task: () => Promise<T>): Promise<T> {
   return result;
 }
 
+function parseDismissed(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map(String).filter(Boolean);
+}
+
 function mapAccount(row: Record<string, unknown>): Account {
   return {
     memberId: String(row.member_id),
     username: String(row.username),
     email: String(row.email),
     passwordHash: String(row.password_hash),
+    notificationLastReadAt: row.notification_last_read_at
+      ? String(row.notification_last_read_at)
+      : undefined,
+    dismissedNotificationIds: parseDismissed(row.dismissed_notification_ids),
   };
+}
+
+async function accountSelectColumns() {
+  if (accountNotifyReady === true) return ACCOUNT_COLUMNS;
+  if (accountNotifyReady === false) return ACCOUNT_COLUMNS_BASE;
+  const { error } = await getSupabase().from("accounts").select("notification_last_read_at").limit(1);
+  accountNotifyReady = !error;
+  return accountNotifyReady ? ACCOUNT_COLUMNS : ACCOUNT_COLUMNS_BASE;
 }
 
 async function readLocal(): Promise<Account[]> {
   try {
     const raw = await fs.readFile(FILE, "utf8");
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Account[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as Account[]).map((account) => ({
+      ...account,
+      dismissedNotificationIds: account.dismissedNotificationIds ?? [],
+    }));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     await writeLocal([]);
@@ -55,9 +83,8 @@ async function writeLocal(rows: Account[]) {
 export function listAccounts() {
   return run(async () => {
     if (hasSupabaseEnv()) {
-      const { data, error } = await getSupabase()
-        .from("accounts")
-        .select("member_id, username, email, password_hash");
+      const columns = await accountSelectColumns();
+      const { data, error } = await getSupabase().from("accounts").select(columns);
       if (error) throw error;
       return (data ?? []).map((row) => mapAccount(row as unknown as Record<string, unknown>));
     }
@@ -69,9 +96,10 @@ export function findAccountByUsername(username: string) {
   const needle = username.trim().toLowerCase();
   return run(async () => {
     if (hasSupabaseEnv()) {
+      const columns = await accountSelectColumns();
       const { data, error } = await getSupabase()
         .from("accounts")
-        .select("member_id, username, email, password_hash")
+        .select(columns)
         .eq("username", needle)
         .maybeSingle();
       if (error) throw error;
@@ -85,9 +113,10 @@ export function findAccountByEmail(email: string) {
   const needle = email.trim().toLowerCase();
   return run(async () => {
     if (hasSupabaseEnv()) {
+      const columns = await accountSelectColumns();
       const { data, error } = await getSupabase()
         .from("accounts")
-        .select("member_id, username, email, password_hash")
+        .select(columns)
         .eq("email", needle)
         .maybeSingle();
       if (error) throw error;
@@ -107,9 +136,10 @@ export function findAccountByLogin(login: string) {
 export function findAccountByMember(memberId: string) {
   return run(async () => {
     if (hasSupabaseEnv()) {
+      const columns = await accountSelectColumns();
       const { data, error } = await getSupabase()
         .from("accounts")
-        .select("member_id, username, email, password_hash")
+        .select(columns)
         .eq("member_id", memberId)
         .maybeSingle();
       if (error) throw error;
@@ -119,18 +149,32 @@ export function findAccountByMember(memberId: string) {
   });
 }
 
-export function saveAccount(memberId: string, patch: Partial<Pick<Account, "email" | "passwordHash">>) {
+export function saveAccount(
+  memberId: string,
+  patch: Partial<
+    Pick<Account, "email" | "passwordHash" | "notificationLastReadAt" | "dismissedNotificationIds">
+  >,
+) {
   return run(async () => {
     if (hasSupabaseEnv()) {
+      const columns = await accountSelectColumns();
       const row: Record<string, unknown> = {};
       if (patch.email !== undefined) row.email = patch.email;
       if (patch.passwordHash !== undefined) row.password_hash = patch.passwordHash;
+      if (accountNotifyReady !== false) {
+        if (patch.notificationLastReadAt !== undefined) {
+          row.notification_last_read_at = patch.notificationLastReadAt;
+        }
+        if (patch.dismissedNotificationIds !== undefined) {
+          row.dismissed_notification_ids = patch.dismissedNotificationIds;
+        }
+      }
 
       const { data, error } = await getSupabase()
         .from("accounts")
         .update(row)
         .eq("member_id", memberId)
-        .select("member_id, username, email, password_hash")
+        .select(columns)
         .maybeSingle();
       if (error) throw error;
       return data ? mapAccount(data as unknown as Record<string, unknown>) : null;
@@ -145,26 +189,28 @@ export function saveAccount(memberId: string, patch: Partial<Pick<Account, "emai
   });
 }
 
-export function createAccount(input: Omit<Account, "passwordHash"> & { password?: string }) {
+export function createAccount(input: Omit<Account, "passwordHash" | "dismissedNotificationIds"> & { password?: string }) {
   return run(async () => {
     const account: Account = {
       memberId: input.memberId,
       username: input.username.trim().toLowerCase(),
       email: input.email.trim().toLowerCase(),
       passwordHash: hashPassword(input.password ?? INITIAL_PASSWORD),
+      dismissedNotificationIds: [],
     };
 
     if (hasSupabaseEnv()) {
-      const { data, error } = await getSupabase()
-        .from("accounts")
-        .insert({
-          member_id: account.memberId,
-          username: account.username,
-          email: account.email,
-          password_hash: account.passwordHash,
-        })
-        .select("member_id, username, email, password_hash")
-        .single();
+      const columns = await accountSelectColumns();
+      const insert: Record<string, unknown> = {
+        member_id: account.memberId,
+        username: account.username,
+        email: account.email,
+        password_hash: account.passwordHash,
+      };
+      if (accountNotifyReady !== false) {
+        insert.dismissed_notification_ids = [];
+      }
+      const { data, error } = await getSupabase().from("accounts").insert(insert).select(columns).single();
       if (error) throw error;
       return mapAccount(data as unknown as Record<string, unknown>);
     }

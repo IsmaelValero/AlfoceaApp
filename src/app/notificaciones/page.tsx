@@ -1,42 +1,101 @@
-import Link from "next/link";
-
+import { DecisionNotifications } from "@/components/DecisionNotifications";
 import { ReservationCard } from "@/components/ReservationCard";
-import { EmptyState } from "@/components/ui";
-import { getHomeData } from "@/lib/queries";
+import { ReservationRequestNotice } from "@/components/ReservationRequestNotice";
+import { EmptyState, ModuleTitle } from "@/components/ui";
+import { findAccountByMember } from "@/lib/accounts";
+import { getAdminSession } from "@/lib/authz";
+import { visibleDecisionNotifications } from "@/lib/notifications";
+import { getCurrentMember, getHomeData, listReservations } from "@/lib/queries";
+
+import { markAllNotificationsRead } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const home = await getHomeData();
-  const hasAnything = home.todayReservations.length > 0 || home.pending.length > 0 || home.nextReservation;
+  const [home, admin, current, reservations] = await Promise.all([
+    getHomeData(),
+    getAdminSession(),
+    getCurrentMember(),
+    listReservations(),
+  ]);
+
+  if (current) {
+    await markAllNotificationsRead();
+  }
+
+  const pendingRequests = home.pending;
+  const account = current ? await findAccountByMember(current.member.id) : null;
+  const dismissed = account?.dismissedNotificationIds ?? [];
+
+  if (admin) {
+    const hasAnything = pendingRequests.length > 0 || home.todayReservations.length > 0;
+
+    return (
+      <main className="screen">
+        <ModuleTitle title="Notificaciones" />
+
+        {hasAnything ? (
+          <div className="space-y-6">
+            {pendingRequests.length > 0 ? (
+              <section>
+                <h2 className="section-title mb-2">Solicitudes de reserva ({pendingRequests.length})</h2>
+                <ul className="space-y-3">
+                  {pendingRequests.map((reservation) => (
+                    <li key={reservation.id}>
+                      <ReservationRequestNotice reservation={reservation} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {home.todayReservations.length > 0 ? (
+              <section>
+                <h2 className="section-title mb-2">Hoy en el terreno</h2>
+                <ul className="space-y-2.5">
+                  {home.todayReservations.map((reservation) => (
+                    <li key={reservation.id}>
+                      <ReservationCard reservation={reservation} showRelative={false} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </div>
+        ) : (
+          <EmptyState
+            title="No hay solicitudes"
+            description="Cuando alguien pida una reserva, te llegara aqui para previsualizarla y aceptarla o rechazarla."
+          />
+        )}
+      </main>
+    );
+  }
+
+  const memberId = current?.member.id ?? "";
+  const decisions = memberId
+    ? visibleDecisionNotifications(reservations, memberId, dismissed)
+    : [];
+  const ownPending = memberId
+    ? pendingRequests.filter((reservation) => reservation.memberId === memberId)
+    : [];
+
+  const hasAnything = decisions.length > 0 || ownPending.length > 0;
 
   return (
     <main className="screen">
-      <header className="mb-6 text-center">
-        <p className="section-title">Alfocea</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Notificaciones</h1>
-      </header>
+      <ModuleTitle title="Notificaciones" />
 
       {hasAnything ? (
         <div className="space-y-6">
-          {home.todayReservations.length > 0 ? (
-            <section>
-              <h2 className="section-title mb-2">Hoy en el terreno</h2>
-              <ul className="space-y-2.5">
-                {home.todayReservations.map((reservation) => (
-                  <li key={reservation.id}>
-                    <ReservationCard reservation={reservation} showRelative={false} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+          <DecisionNotifications items={decisions} />
 
-          {home.pending.length > 0 ? (
+          {ownPending.length > 0 ? (
             <section>
-              <h2 className="section-title mb-2">Sin confirmar</h2>
+              <h2 className="section-title mb-2">Tus solicitudes</h2>
+              <p className="mb-2 text-sm text-muted">Esperando respuesta del administrador.</p>
               <ul className="space-y-2.5">
-                {home.pending.map((reservation) => (
+                {ownPending.map((reservation) => (
                   <li key={reservation.id}>
                     <ReservationCard reservation={reservation} />
                   </li>
@@ -44,21 +103,12 @@ export default async function NotificationsPage() {
               </ul>
             </section>
           ) : null}
-
-          {home.nextReservation && home.nextReservation.startDate > home.today ? (
-            <section>
-              <h2 className="section-title mb-2">Proxima visita</h2>
-              <Link href={`/reservas/${home.nextReservation.id}`} className="card block px-4 py-4">
-                <p className="font-semibold text-ink">{home.nextReservation.title}</p>
-                <p className="mt-0.5 text-sm text-muted">
-                  {home.nextReservation.family?.name} - {home.nextReservation.zone}
-                </p>
-              </Link>
-            </section>
-          ) : null}
         </div>
       ) : (
-        <EmptyState title="No hay avisos" description="Cuando haya una visita o algo pendiente, aparecera aqui." />
+        <EmptyState
+          title="No hay avisos"
+          description="Cuando te acepten o rechacen una reserva, aparecera aqui."
+        />
       )}
     </main>
   );

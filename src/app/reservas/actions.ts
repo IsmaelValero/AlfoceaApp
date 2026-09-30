@@ -132,11 +132,15 @@ export async function setReservationStatus(formData: FormData) {
 
   const id = text(formData, "id");
   const status = text(formData, "status") as ReservationStatus;
+  const next = text(formData, "next") || `/reservas/${id}`;
   if (!STATUS_VALUES.includes(status)) return;
 
-  await db.reservations.update(id, { status });
+  await db.reservations.update(id, {
+    status,
+    resolvedAt: status === "pendiente" ? undefined : new Date().toISOString(),
+  });
   refresh(id);
-  redirect(`/reservas/${id}`);
+  redirect(next.startsWith("/") ? next : `/reservas/${id}`);
 }
 
 export async function createReservation(_prevState: FormState, formData: FormData): Promise<FormState> {

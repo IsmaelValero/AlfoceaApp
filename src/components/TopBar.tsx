@@ -2,12 +2,29 @@ import Link from "next/link";
 
 import { BellIcon } from "@/components/icons";
 import { SyncMark } from "@/components/SyncMark";
-import { getCurrentMember, getHomeData } from "@/lib/queries";
+import { findAccountByMember } from "@/lib/accounts";
+import { isAdmin } from "@/lib/authz";
+import { unreadAdminRequestCount, unreadDecisionCount } from "@/lib/notifications";
+import { getCurrentMember, getHomeData, listReservations } from "@/lib/queries";
 
 /** Cabecera con campana, titulo centrado y acceso al perfil. */
 export async function TopBar({ title }: { title: string }) {
-  const [home, current] = await Promise.all([getHomeData(), getCurrentMember()]);
+  const [home, current, reservations] = await Promise.all([
+    getHomeData(),
+    getCurrentMember(),
+    listReservations(),
+  ]);
   const initial = (current?.member.name ?? "?").slice(0, 1).toUpperCase();
+  const admin = isAdmin(current?.member);
+  const account = current ? await findAccountByMember(current.member.id) : null;
+  const lastReadAt = account?.notificationLastReadAt;
+  const dismissed = account?.dismissedNotificationIds ?? [];
+
+  const alertCount = admin
+    ? unreadAdminRequestCount(home.pending, lastReadAt)
+    : current
+      ? unreadDecisionCount(reservations, current.member.id, dismissed, lastReadAt)
+      : 0;
 
   return (
     <header className="relative mb-6 flex h-11 items-center justify-center">
@@ -15,14 +32,12 @@ export async function TopBar({ title }: { title: string }) {
       <Link
         href="/notificaciones"
         aria-label={
-          home.pending.length > 0
-            ? `Notificaciones, ${home.pending.length} sin confirmar`
-            : "Notificaciones"
+          alertCount > 0 ? `Notificaciones, ${alertCount} sin leer` : "Notificaciones"
         }
         className="absolute left-0 flex h-11 w-11 items-center justify-center rounded-2xl transition active:scale-95"
       >
         <BellIcon className="h-7 w-7" />
-        {home.pending.length > 0 ? (
+        {alertCount > 0 ? (
           <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-canvas" />
         ) : null}
       </Link>

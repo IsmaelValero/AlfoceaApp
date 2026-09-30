@@ -75,7 +75,11 @@ export default async function ReservationDetailPage({ params }: { params: Promis
         </section>
       ) : null}
 
-      {admin && reservation.status === "pendiente" ? <AdminReservationActions id={reservation.id} /> : null}
+      {admin && reservation.status === "pendiente" ? (
+        <div className="mt-6">
+          <AdminReservationActions id={reservation.id} />
+        </div>
+      ) : null}
 
       {admin ? (
         <div className="mt-4">

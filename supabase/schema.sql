@@ -26,7 +26,9 @@ create table if not exists public.accounts (
   member_id text primary key references public.members (id) on delete cascade,
   username text not null unique,
   email text not null unique,
-  password_hash text not null
+  password_hash text not null,
+  notification_last_read_at timestamptz,
+  dismissed_notification_ids jsonb not null default '[]'::jsonb
 );
 
 create table if not exists public.reservations (
@@ -43,6 +45,7 @@ create table if not exists public.reservations (
   status text not null check (status in ('confirmada', 'pendiente', 'cancelada')),
   notes text,
   created_at timestamptz not null default now(),
+  resolved_at timestamptz,
   check (end_date >= start_date)
 );
 

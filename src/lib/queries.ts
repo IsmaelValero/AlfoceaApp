@@ -216,7 +216,8 @@ export async function getHomeData(): Promise<HomeData> {
     todayReservations,
     nextReservation: active.find((r) => r.endDate >= today) ?? null,
     upcoming: active.filter((r) => r.endDate >= today && r.startDate <= horizon),
-    pending: reservations.filter((r) => r.status === "pendiente" && r.endDate >= today),
+    // Todas las pendientes: el admin debe verlas aunque el dia ya haya pasado.
+    pending: reservations.filter((r) => r.status === "pendiente"),
     pinnedRules: rules.filter((r) => r.pinned),
     stats: {
       daysOccupiedThisWeek: week.filter((day) => day.reservations.length > 0).length,
