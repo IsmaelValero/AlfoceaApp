@@ -4,15 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const PHOTOS = [
-  { src: "/galeria/01.png", alt: "La familia reunida al atardecer" },
-  { src: "/galeria/02.png", alt: "Brindis en la cocina" },
-  { src: "/galeria/03.png", alt: "La familia en la cocina" },
-  { src: "/galeria/04.png", alt: "Comida en el porche" },
-  { src: "/galeria/05.png", alt: "La familia en el salon" },
-  { src: "/galeria/06.png", alt: "Vista desde arriba en el cesped" },
-  { src: "/galeria/07.png", alt: "Foto de grupo delante de la casa" },
-  { src: "/galeria/08.png", alt: "La familia en el pueblo" },
-  { src: "/galeria/09.png", alt: "Celebracion familiar" },
+  "/galeria/01.png",
+  "/galeria/02.png",
+  "/galeria/03.png",
+  "/galeria/04.png",
+  "/galeria/05.png",
+  "/galeria/06.png",
+  "/galeria/07.png",
+  "/galeria/08.png",
+  "/galeria/09.png",
 ];
 
 export function HomeGallery() {
@@ -111,30 +111,30 @@ export function HomeGallery() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        {PHOTOS.map((photo, photoIndex) => (
-          <li key={photo.src}>
-            <button type="button" className="home-gallery-open" onClick={() => openPhoto(photoIndex)} aria-label={`Ampliar foto: ${photo.alt}`}>
-              <img src={photo.src} alt="" draggable={false} />
+        {PHOTOS.map((src, photoIndex) => (
+          <li key={src}>
+            <button
+              type="button"
+              className="home-gallery-open"
+              onClick={() => openPhoto(photoIndex)}
+              aria-label={`Ampliar foto ${photoIndex + 1}`}
+            >
+              <img src={src} alt="" draggable={false} />
               <div className="home-gallery-shade" />
               <p className="home-gallery-kicker">Galeria</p>
               <p className="home-gallery-count">
                 {photoIndex + 1} / {PHOTOS.length}
               </p>
-              <p className="home-gallery-title">{photo.alt}</p>
             </button>
           </li>
         ))}
       </ul>
       <p className="sr-only" aria-live="polite">
-        {PHOTOS[index]?.alt}. Foto {index + 1} de {PHOTOS.length}.
+        Foto {index + 1} de {PHOTOS.length}.
       </p>
       {open !== null && phone
         ? createPortal(
-            <PhotoViewer
-              index={open}
-              onClose={closePhoto}
-              onChange={(next) => setOpen(next)}
-            />,
+            <PhotoViewer index={open} onClose={closePhoto} onChange={(next) => setOpen(next)} />,
             phone,
           )
         : null}
@@ -151,7 +151,7 @@ function PhotoViewer({
   onClose: () => void;
   onChange: (next: number) => void;
 }) {
-  const photo = PHOTOS[index];
+  const src = PHOTOS[index];
   const startX = useRef<number | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -187,7 +187,7 @@ function PhotoViewer({
       className="photo-viewer"
       role="dialog"
       aria-modal="true"
-      aria-label={photo.alt}
+      aria-label={`Foto ${index + 1} de ${PHOTOS.length}`}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
     >
@@ -200,9 +200,8 @@ function PhotoViewer({
       >
         Cerrar
       </button>
-      <img src={photo.src} alt={photo.alt} draggable={false} />
+      <img src={src} alt="" draggable={false} />
       <p className="photo-viewer-caption">
-        {photo.alt}
         <span>
           {index + 1} / {PHOTOS.length}
         </span>
@@ -210,3 +209,4 @@ function PhotoViewer({
     </div>
   );
 }
+
