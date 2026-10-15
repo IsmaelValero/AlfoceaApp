@@ -16,8 +16,8 @@ export function monthName(monthKey: string) {
 }
 
 /**
- * Sábados, domingos y findes de ese mes.
- * Si se pasa `notBefore`, se ocultan opciones cuyo finya ha pasado.
+ * Solo sábados y domingos de ese mes (sin “finde” de dos días).
+ * Si se pasa `notBefore`, se ocultan opciones cuyo día ya ha pasado.
  */
 export function weekendChoices(monthKey: string, notBefore?: DateKey): WeekendChoice[] {
   const [year, month] = monthKey.split("-").map(Number);
@@ -40,11 +40,6 @@ export function weekendChoices(monthKey: string, notBefore?: DateKey): WeekendCh
       choices.push({ label: `Sábado ${dayLabel(saturday)}`, startDate: saturday, endDate: saturday });
       if (sundayInMonth) {
         choices.push({ label: `Domingo ${dayLabel(sunday)}`, startDate: sunday, endDate: sunday });
-        choices.push({
-          label: `Finde ${spanLabel(saturday, sunday)}`,
-          startDate: saturday,
-          endDate: sunday,
-        });
       }
     }
     cursor.setDate(cursor.getDate() + 1);
@@ -54,16 +49,12 @@ export function weekendChoices(monthKey: string, notBefore?: DateKey): WeekendCh
   return choices.filter((choice) => choice.endDate >= notBefore);
 }
 
+/** Opción de un solo día (sábado o domingo), no finde. */
+export function isSingleDayOption(option: { startDate: string; endDate: string }) {
+  return option.startDate === option.endDate;
+}
+
 function dayLabel(key: DateKey) {
   const date = fromKey(key);
   return `${date.getDate()} de ${MONTH_LABELS[date.getMonth()]}`;
-}
-
-function spanLabel(start: DateKey, end: DateKey) {
-  const a = fromKey(start);
-  const b = fromKey(end);
-  if (a.getMonth() === b.getMonth()) {
-    return `${a.getDate()} y ${b.getDate()} de ${MONTH_LABELS[a.getMonth()]}`;
-  }
-  return `${a.getDate()} de ${MONTH_LABELS[a.getMonth()]} y ${b.getDate()} de ${MONTH_LABELS[b.getMonth()]}`;
 }

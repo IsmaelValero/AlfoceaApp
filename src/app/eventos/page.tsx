@@ -2,15 +2,16 @@ import Link from "next/link";
 
 import { AdminCreateLink } from "@/components/AdminLinks";
 import { Badge, EmptyState, ModuleTitle } from "@/components/ui";
-import { getAdminSession } from "@/lib/authz";
+import { canMemberWrite } from "@/lib/authz";
 import { formatRange, todayKey } from "@/lib/dates";
 import { monthName } from "@/lib/events";
-import { loadEventBoard } from "@/lib/queries";
+import { getCurrentMember, loadEventBoard } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
-  const [board, admin] = await Promise.all([loadEventBoard({ ensurePoll: true }), getAdminSession()]);
+  const [board, current] = await Promise.all([loadEventBoard({ ensurePoll: true }), getCurrentMember()]);
+  const canCreate = Boolean(current && canMemberWrite(current.member));
 
   if (board.missing) {
     return (
@@ -36,13 +37,15 @@ export default async function EventsPage() {
   return (
     <main className="screen">
       <ModuleTitle title="Eventos" />
-      {admin ? <AdminCreateLink href="/eventos/nuevo" label="Nueva celebración" /> : null}
+      {canCreate ? <AdminCreateLink href="/eventos/nuevo" label="Nueva celebración" /> : null}
 
       {poll?.status === "abierta" ? (
         <Link href="/eventos/encuesta" className="card mb-5 block px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand">Encuesta abierta</p>
           <p className="mt-1 font-semibold text-ink">Cumpleaños de {monthName(board.month)}</p>
-          <p className="mt-1 text-sm text-muted">Una persona por familia elige el finde y cuántos podéis subir.</p>
+          <p className="mt-1 text-sm text-muted">
+            Una persona por familia elige sábados o domingos y cuántos adultos y niños podéis subir.
+          </p>
         </Link>
       ) : null}
 

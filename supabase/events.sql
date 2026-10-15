@@ -26,8 +26,10 @@ create table if not exists public.poll_votes (
   family_id text not null references public.families (id) on delete cascade,
   member_id text references public.members (id) on delete set null,
   people_count integer not null check (people_count >= 1),
+  adults_count integer not null default 0 check (adults_count >= 0),
+  children_count integer not null default 0 check (children_count >= 0),
   created_at timestamptz not null default now(),
-  unique (poll_id, family_id)
+  unique (poll_id, family_id, option_id)
 );
 
 create table if not exists public.events (

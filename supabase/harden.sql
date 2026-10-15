@@ -46,6 +46,22 @@ begin
     alter table public.poll_votes
       add constraint poll_votes_member_id_fkey
       foreign key (member_id) references public.members (id) on delete set null;
+
+    -- Varios dias por familia + adultos/ninos.
+    alter table public.poll_votes drop constraint if exists poll_votes_poll_id_family_id_key;
+    alter table public.poll_votes add column if not exists adults_count integer;
+    alter table public.poll_votes add column if not exists children_count integer;
+    update public.poll_votes
+      set adults_count = coalesce(adults_count, people_count),
+          children_count = coalesce(children_count, 0)
+      where adults_count is null or children_count is null;
+    alter table public.poll_votes alter column adults_count set default 0;
+    alter table public.poll_votes alter column children_count set default 0;
+    alter table public.poll_votes alter column adults_count set not null;
+    alter table public.poll_votes alter column children_count set not null;
+    alter table public.poll_votes drop constraint if exists poll_votes_poll_family_option_key;
+    alter table public.poll_votes
+      add constraint poll_votes_poll_family_option_key unique (poll_id, family_id, option_id);
   end if;
 
   if to_regclass('public.event_rsvps') is not null then

@@ -5,12 +5,19 @@ import { PollVoteForm } from "@/components/PollVoteForm";
 import { BackLink, EmptyState, PageHeader } from "@/components/ui";
 import { getAdminSession } from "@/lib/authz";
 import { formatBirthday } from "@/lib/birthdays";
-import { monthName } from "@/lib/events";
+import { isSingleDayOption, monthName } from "@/lib/events";
 import { getCurrentMember, loadEventBoard } from "@/lib/queries";
 
 import { closePoll, votePoll } from "../actions";
 
 export const dynamic = "force-dynamic";
+
+function peopleLabel(adults: number, children: number) {
+  const parts: string[] = [];
+  if (adults > 0) parts.push(`${adults} ${adults === 1 ? "adulto" : "adultos"}`);
+  if (children > 0) parts.push(`${children} ${children === 1 ? "niño" : "niños"}`);
+  return parts.join(", ") || "0 personas";
+}
 
 export default async function PollPage() {
   const [board, current, admin] = await Promise.all([
@@ -38,10 +45,11 @@ export default async function PollPage() {
   }
 
   const options = board.options
-    .filter((option) => option.pollId === poll.id)
+    .filter((option) => option.pollId === poll.id && isSingleDayOption(option))
     .sort((a, b) => a.sortOrder - b.sortOrder);
   const votes = board.votes.filter((vote) => vote.pollId === poll.id);
-  const own = current ? votes.find((vote) => vote.familyId === current.family.id) : undefined;
+  const ownVotes = current ? votes.filter((vote) => vote.familyId === current.family.id) : [];
+  const own = ownVotes[0];
   const ownMember = own ? board.members.find((member) => member.id === own.memberId) : undefined;
   const locked = Boolean(own && current && own.memberId !== current.member.id);
   const monthNumber = Number(board.month.slice(5, 7));
@@ -52,10 +60,17 @@ export default async function PollPage() {
   for (const vote of votes) counts[vote.optionId] = (counts[vote.optionId] ?? 0) + 1;
   const leaderId = options.slice().sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0))[0]?.id;
 
+  const votesByFamily = new Map<string, typeof votes>();
+  for (const vote of votes) {
+    const list = votesByFamily.get(vote.familyId) ?? [];
+    list.push(vote);
+    votesByFamily.set(vote.familyId, list);
+  }
+
   return (
     <main className="screen">
       <BackLink href="/eventos" label="Eventos" />
-      <PageHeader title={`Cumpleaños de ${monthName(board.month)}`} subtitle="Un voto por familia" />
+      <PageHeader title={`Cumpleaños de ${monthName(board.month)}`} subtitle="Un voto por familia · varios días" />
 
       {birthdays.length > 0 ? (
         <section className="mb-5">
@@ -81,7 +96,12 @@ export default async function PollPage() {
         <p className="card mb-5 px-4 py-4 text-sm font-medium text-ink">
           Ya se ha votado por esta familia.
           {ownMember ? ` Lo apuntó ${ownMember.name}` : ""}
-          {own ? `: ${options.find((option) => option.id === own.optionId)?.label ?? ""}, ${own.peopleCount} personas.` : ""}
+          {own
+            ? `: ${ownVotes
+                .map((vote) => options.find((option) => option.id === vote.optionId)?.label)
+                .filter(Boolean)
+                .join(", ")}, ${peopleLabel(own.adultsCount, own.childrenCount)}.`
+            : ""}
         </p>
       ) : null}
 
@@ -90,23 +110,31 @@ export default async function PollPage() {
           action={votePoll}
           pollId={poll.id}
           options={options}
-          selectedId={own?.optionId}
-          peopleCount={own?.peopleCount}
+          selectedIds={ownVotes.map((vote) => vote.optionId)}
+          adultsCount={own?.adultsCount}
+          childrenCount={own?.childrenCount}
         />
       ) : null}
 
       <section className="mt-6">
         <h2 className="section-title mb-2">Votos</h2>
-        {votes.length > 0 ? (
+        {votesByFamily.size > 0 ? (
           <ul className="space-y-2">
-            {votes.map((vote) => {
-              const family = board.families.find((item) => item.id === vote.familyId);
-              const option = options.find((item) => item.id === vote.optionId);
+            {[...votesByFamily.entries()].map(([familyId, familyVotes]) => {
+              const family = board.families.find((item) => item.id === familyId);
+              const sample = familyVotes[0];
+              const labels = familyVotes
+                .map((vote) => options.find((item) => item.id === vote.optionId)?.label)
+                .filter(Boolean)
+                .join(", ");
               return (
-                <li key={vote.id} className="card px-4 py-3 text-sm">
+                <li key={familyId} className="card px-4 py-3 text-sm">
                   <p className="font-semibold text-ink">{family?.name ?? "Familia"}</p>
                   <p className="mt-0.5 text-muted">
-                    {option?.label} · {vote.peopleCount} {vote.peopleCount === 1 ? "persona" : "personas"}
+                    {labels}
+                    {sample
+                      ? ` · ${peopleLabel(sample.adultsCount, sample.childrenCount)}`
+                      : ""}
                   </p>
                 </li>
               );

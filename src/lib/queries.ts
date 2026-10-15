@@ -8,7 +8,7 @@ import {
   todayKey,
   type DateKey,
 } from "@/lib/dates";
-import { currentMonthKey, weekendChoices } from "@/lib/events";
+import { currentMonthKey, isSingleDayOption, weekendChoices } from "@/lib/events";
 import { timesOverlap } from "@/lib/hours";
 import { occurrencesBetween } from "@/lib/recurrence";
 import { getSessionMemberId } from "@/lib/session";
@@ -396,6 +396,13 @@ async function closeStalePolls(polls: Poll[], month: string) {
   );
 }
 
+/** Quita opciones tipo “finde” (dos días) de una encuesta abierta. */
+async function pruneMultiDayPollOptions(pollId: string) {
+  const options = await db.pollOptions.list();
+  const obsolete = options.filter((option) => option.pollId === pollId && !isSingleDayOption(option));
+  await Promise.all(obsolete.map((option) => db.pollOptions.remove(option.id)));
+}
+
 /**
  * Abre la encuesta del mes actual si no existe.
  * Solo debe llamarse desde Eventos / Encuesta, no desde Inicio.
@@ -405,8 +412,12 @@ export async function ensureCurrentMonthPoll() {
   const month = currentMonthKey(today);
   const listed = await db.polls.list();
   await closeStalePolls(listed, month);
-  if (listed.some((poll) => poll.month === month)) {
-    return listed.find((poll) => poll.month === month)!;
+  const existingMonth = listed.find((poll) => poll.month === month);
+  if (existingMonth) {
+    if (existingMonth.status === "abierta") {
+      await pruneMultiDayPollOptions(existingMonth.id);
+    }
+    return existingMonth;
   }
 
   const choices = weekendChoices(month, today);

@@ -72,7 +72,9 @@ export default async function HomePage() {
                 {events.pollOpen ? (
                   <Link href="/eventos/encuesta" className="card block px-4 py-3.5">
                     <p className="font-semibold text-ink">Encuesta de {monthName(events.month)}</p>
-                    <p className="mt-0.5 text-sm text-muted">Elige el finde de los cumpleaños. Un voto por familia.</p>
+                    <p className="mt-0.5 text-sm text-muted">
+                      Elige sábados o domingos de los cumpleaños. Un voto por familia.
+                    </p>
                   </Link>
                 ) : null}
                 {current

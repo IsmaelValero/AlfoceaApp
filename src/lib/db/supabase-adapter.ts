@@ -568,7 +568,18 @@ function toRecurringRow(data: Partial<Omit<RecurringTask, "id">> & { id?: string
 
 const POLL_COLUMNS = "id, month, status, event_id, created_at";
 const POLL_OPTION_COLUMNS = "id, poll_id, label, start_date, end_date, sort_order";
-const POLL_VOTE_COLUMNS = "id, poll_id, option_id, family_id, member_id, people_count, created_at";
+const POLL_VOTE_COLUMNS_BASE = "id, poll_id, option_id, family_id, member_id, people_count, created_at";
+const POLL_VOTE_COLUMNS = `${POLL_VOTE_COLUMNS_BASE}, adults_count, children_count`;
+
+let pollVotesAdultsReady: boolean | null = null;
+
+async function pollVoteSelectColumns() {
+  if (pollVotesAdultsReady === true) return POLL_VOTE_COLUMNS;
+  if (pollVotesAdultsReady === false) return POLL_VOTE_COLUMNS_BASE;
+  const { error } = await getSupabase().from("poll_votes").select("adults_count").limit(1);
+  pollVotesAdultsReady = !error;
+  return pollVotesAdultsReady ? POLL_VOTE_COLUMNS : POLL_VOTE_COLUMNS_BASE;
+}
 const EVENT_COLUMNS = "id, title, kind, start_date, end_date, place, notes, month, poll_id, created_at";
 const RSVP_COLUMNS = "id, event_id, family_id, member_id, status, people_count, created_at";
 const ITEM_COLUMNS = "id, event_id, name, quantity, member_id, created_at";
@@ -595,13 +606,22 @@ function mapPollOption(row: Record<string, unknown>): PollOption {
 }
 
 function mapPollVote(row: Record<string, unknown>): PollVote {
+  const peopleCount = Number(row.people_count);
+  const adultsCount =
+    row.adults_count !== undefined && row.adults_count !== null
+      ? Number(row.adults_count)
+      : peopleCount;
+  const childrenCount =
+    row.children_count !== undefined && row.children_count !== null ? Number(row.children_count) : 0;
   return {
     id: String(row.id),
     pollId: String(row.poll_id),
     optionId: String(row.option_id),
     familyId: String(row.family_id),
     memberId: row.member_id ? String(row.member_id) : undefined,
-    peopleCount: Number(row.people_count),
+    peopleCount,
+    adultsCount,
+    childrenCount,
     createdAt: String(row.created_at),
   };
 }
@@ -673,6 +693,8 @@ function toPollVoteRow(data: Partial<Omit<PollVote, "id">> & { id?: string }) {
     ...(data.familyId !== undefined ? { family_id: data.familyId } : {}),
     ...(data.memberId !== undefined ? { member_id: data.memberId } : {}),
     ...(data.peopleCount !== undefined ? { people_count: data.peopleCount } : {}),
+    ...(data.adultsCount !== undefined ? { adults_count: data.adultsCount } : {}),
+    ...(data.childrenCount !== undefined ? { children_count: data.childrenCount } : {}),
     ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
   };
 }
@@ -725,6 +747,58 @@ function toCompletionRow(data: Partial<Omit<RecurringCompletion, "id">> & { id?:
   };
 }
 
+class PollVotesCollection implements Collection<PollVote> {
+  async list(): Promise<PollVote[]> {
+    const columns = await pollVoteSelectColumns();
+    const { data, error } = await getSupabase().from("poll_votes").select(columns);
+    if (error) throw error;
+    return (data ?? []).map((row) => mapPollVote(row as unknown as Record<string, unknown>));
+  }
+
+  async get(id: string): Promise<PollVote | null> {
+    const columns = await pollVoteSelectColumns();
+    const { data, error } = await getSupabase().from("poll_votes").select(columns).eq("id", id).maybeSingle();
+    if (error) throw error;
+    return data ? mapPollVote(data as unknown as Record<string, unknown>) : null;
+  }
+
+  async create(data: Omit<PollVote, "id">): Promise<PollVote> {
+    const columns = await pollVoteSelectColumns();
+    const id = randomUUID();
+    const row = toPollVoteRow({ ...data, id });
+    if (pollVotesAdultsReady === false) {
+      delete row.adults_count;
+      delete row.children_count;
+    }
+    const { data: created, error } = await getSupabase().from("poll_votes").insert(row).select(columns).single();
+    if (error) throw error;
+    return mapPollVote(created as unknown as Record<string, unknown>);
+  }
+
+  async update(id: string, patch: Partial<Omit<PollVote, "id">>): Promise<PollVote | null> {
+    const columns = await pollVoteSelectColumns();
+    const row = toPollVoteRow(patch);
+    if (pollVotesAdultsReady === false) {
+      delete row.adults_count;
+      delete row.children_count;
+    }
+    const { data, error } = await getSupabase()
+      .from("poll_votes")
+      .update(row)
+      .eq("id", id)
+      .select(columns)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? mapPollVote(data as unknown as Record<string, unknown>) : null;
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const { error, count } = await getSupabase().from("poll_votes").delete({ count: "exact" }).eq("id", id);
+    if (error) throw error;
+    return (count ?? 0) > 0;
+  }
+}
+
 export function createSupabaseAdapter(): DataAdapter {
   return {
     families: new SupabaseCollection<Family>("families", FAMILY_COLUMNS, mapFamily, toFamilyRow),
@@ -753,7 +827,7 @@ export function createSupabaseAdapter(): DataAdapter {
     ),
     polls: new SupabaseCollection<Poll>("polls", POLL_COLUMNS, mapPoll, toPollRow),
     pollOptions: new SupabaseCollection<PollOption>("poll_options", POLL_OPTION_COLUMNS, mapPollOption, toPollOptionRow),
-    pollVotes: new SupabaseCollection<PollVote>("poll_votes", POLL_VOTE_COLUMNS, mapPollVote, toPollVoteRow),
+    pollVotes: new PollVotesCollection(),
     events: new SupabaseCollection<FamilyEvent>("events", EVENT_COLUMNS, mapFamilyEvent, toFamilyEventRow),
     eventRsvps: new SupabaseCollection<EventRsvp>("event_rsvps", RSVP_COLUMNS, mapEventRsvp, toEventRsvpRow),
     eventItems: new SupabaseCollection<EventItem>("event_items", ITEM_COLUMNS, mapEventItem, toEventItemRow),

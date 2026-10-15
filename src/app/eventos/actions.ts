@@ -36,39 +36,62 @@ export async function votePoll(_prev: FormState, formData: FormData): Promise<Fo
   if (!canMemberWrite(current.member)) return { error: "Tu cuenta es de invitados: solo puedes consultar." };
 
   const pollId = text(formData, "pollId");
-  const optionId = text(formData, "optionId");
-  const peopleCount = Number(text(formData, "peopleCount"));
-  if (!pollId || !optionId) return { error: "Elige un sábado, un domingo o un finde." };
-  if (!Number.isInteger(peopleCount) || peopleCount < 1) {
-    return { error: "Indica cuántas personas podéis subir." };
+  const optionIds = formData
+    .getAll("optionId")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  const adultsCount = Number(text(formData, "adultsCount"));
+  const childrenCount = Number(text(formData, "childrenCount"));
+  const peopleCount = adultsCount + childrenCount;
+
+  if (!pollId) return { error: "Falta la encuesta." };
+  if (optionIds.length === 0) return { error: "Elige al menos un sábado o un domingo." };
+  if (
+    !Number.isInteger(adultsCount) ||
+    !Number.isInteger(childrenCount) ||
+    adultsCount < 0 ||
+    childrenCount < 0 ||
+    peopleCount < 1
+  ) {
+    return { error: "Indica cuántos adultos y niños podéis subir." };
   }
 
-  const [poll, option, votes] = await Promise.all([
+  const [poll, allOptions, votes] = await Promise.all([
     db.polls.get(pollId),
-    db.pollOptions.get(optionId),
+    db.pollOptions.list(),
     db.pollVotes.list(),
   ]);
   if (!poll || poll.status !== "abierta") return { error: "Esta encuesta ya está cerrada." };
-  if (!option || option.pollId !== poll.id) return { error: "Esa fecha no está en la encuesta." };
 
-  const existing = votes.find((vote) => vote.pollId === poll.id && vote.familyId === current.family.id);
-  if (existing && familyAlreadyAnswered(current.member.id, existing.memberId)) {
+  const pollOptions = allOptions.filter((option) => option.pollId === poll.id);
+  const chosen = optionIds.map((id) => pollOptions.find((option) => option.id === id));
+  if (chosen.some((option) => !option)) return { error: "Esa fecha no está en la encuesta." };
+  if (chosen.some((option) => option && option.startDate !== option.endDate)) {
+    return { error: "Solo se pueden elegir sábados o domingos sueltos." };
+  }
+
+  const existing = votes.filter((vote) => vote.pollId === poll.id && vote.familyId === current.family.id);
+  if (existing.some((vote) => familyAlreadyAnswered(current.member.id, vote.memberId))) {
     return { error: "Ya se ha votado por esta familia." };
   }
 
   try {
-    if (existing) {
-      await db.pollVotes.update(existing.id, { optionId, peopleCount, memberId: current.member.id });
-    } else {
-      await db.pollVotes.create({
-        pollId: poll.id,
-        optionId,
-        familyId: current.family.id,
-        memberId: current.member.id,
-        peopleCount,
-        createdAt: new Date().toISOString(),
-      });
-    }
+    await Promise.all(existing.map((vote) => db.pollVotes.remove(vote.id)));
+    const createdAt = new Date().toISOString();
+    await Promise.all(
+      optionIds.map((optionId) =>
+        db.pollVotes.create({
+          pollId: poll.id,
+          optionId,
+          familyId: current.family.id,
+          memberId: current.member.id,
+          peopleCount,
+          adultsCount,
+          childrenCount,
+          createdAt,
+        }),
+      ),
+    );
   } catch (error) {
     if (isUniqueViolation(error)) return { error: "Ya se ha votado por esta familia." };
     throw error;
@@ -122,7 +145,7 @@ export async function closePoll(_prev: FormState, formData: FormData): Promise<F
         familyId: vote.familyId,
         memberId: vote.memberId ?? admin.member.id,
         status: "voy",
-        peopleCount: vote.peopleCount,
+        peopleCount: vote.adultsCount + vote.childrenCount || vote.peopleCount || 1,
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
@@ -136,8 +159,11 @@ export async function closePoll(_prev: FormState, formData: FormData): Promise<F
 }
 
 export async function createEvent(_prev: FormState, formData: FormData): Promise<FormState> {
-  const admin = await getAdminSession();
-  if (!admin) return { error: "Solo un administrador puede crear celebraciones." };
+  const current = await getCurrentMember();
+  if (!current) return { error: "Tienes que entrar." };
+  if (!canMemberWrite(current.member)) {
+    return { error: "Tu cuenta es de invitados: solo puedes consultar." };
+  }
 
   const title = text(formData, "title");
   const kind = text(formData, "kind") as EventKind;

@@ -275,7 +275,10 @@ export interface PollVote extends Entity {
   optionId: string;
   familyId: string;
   memberId?: string;
+  /** Total = adultos + niños (compatibilidad / RSVP al cerrar). */
   peopleCount: number;
+  adultsCount: number;
+  childrenCount: number;
   createdAt: string;
 }
 
