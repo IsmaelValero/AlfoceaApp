@@ -6,7 +6,6 @@ export function BootScreen() {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    document.getElementById("alfocea-splash")?.remove();
     const timer = window.setTimeout(() => setVisible(false), 1100);
     return () => window.clearTimeout(timer);
   }, []);
