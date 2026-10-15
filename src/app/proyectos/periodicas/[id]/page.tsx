@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { MarkDoneButton } from "@/components/MarkDoneButton";
-import { BUTTON_STYLES, PageHeader } from "@/components/ui";
+import { Badge, BUTTON_STYLES, PageHeader } from "@/components/ui";
 import { addDays, formatLong, todayKey } from "@/lib/dates";
 import { describeRecurrence, occurrencesBetween } from "@/lib/recurrence";
 import { getAdminSession } from "@/lib/authz";
@@ -26,9 +26,9 @@ export default async function RecurringTaskPage({ params }: { params: Promise<{ 
   return (
     <main className="screen">
       <PageHeader title={task.title} subtitle={describeRecurrence(task)} />
-      <p className="mb-4 text-sm text-muted">
-        Del {formatLong(task.startDate)} al {formatLong(task.endDate)}
-        {task.zone ? ` · ${task.zone}` : ""}
+      <p className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+        <Badge tone="neutral">Sin fecha límite</Badge>
+        {task.zone ? <span>{task.zone}</span> : null}
       </p>
 
       {manual ? (

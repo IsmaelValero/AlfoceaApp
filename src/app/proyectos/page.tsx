@@ -2,10 +2,10 @@ import Link from "next/link";
 
 import { AdminCreateLink } from "@/components/AdminLinks";
 import { Badge, EmptyState, ModuleTitle } from "@/components/ui";
-import { formatRange } from "@/lib/dates";
 import { describeRecurrence } from "@/lib/recurrence";
 import { getAdminSession } from "@/lib/authz";
 import { loadWorkData } from "@/lib/queries";
+
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
@@ -81,7 +81,7 @@ export default async function ProjectsPage() {
                       <p className="font-semibold text-ink">{task.title}</p>
                       <p className="mt-1 text-sm text-muted">{describeRecurrence(task)}</p>
                       <p className="mt-1 text-xs text-muted">
-                        {formatRange(task.startDate, task.endDate)}
+                        Sin fecha límite
                         {task.zone ? ` · ${task.zone}` : ""}
                         {task.allowDone ? " · Se puede marcar hecha" : ""}
                       </p>

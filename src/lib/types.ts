@@ -197,7 +197,7 @@ export interface ProjectTask extends Entity {
   createdAt: string;
 }
 
-export type RecurrenceKind = "weekly" | "every_n_days" | "monthly";
+export type RecurrenceKind = "weekly" | "every_other_day" | "every_n_days" | "monthly";
 
 export interface RecurringTask extends Entity {
   title: string;
@@ -211,8 +211,10 @@ export interface RecurringTask extends Entity {
   weekdays: number[];
   /** Dia del mes, 1-31. Solo en mensual. */
   monthDay?: number;
+  /** Ancla interna (alta de la tarea). No se muestra: no hay periodo. */
   startDate: string;
-  endDate: string;
+  /** Sin valor: la tarea no tiene fecha limite. */
+  endDate?: string | null;
   /** Si es true, cualquiera puede marcar cada ocurrencia como hecha. */
   allowDone: boolean;
   createdAt: string;

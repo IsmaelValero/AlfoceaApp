@@ -430,8 +430,8 @@ function mapRecurringTask(row: Record<string, unknown>): RecurringTask {
     interval: Number(row.interval) || 1,
     weekdays: asNumberList(row.weekdays),
     monthDay: row.month_day ? Number(row.month_day) : undefined,
-    startDate: String(row.start_date),
-    endDate: String(row.end_date),
+    startDate: String(row.start_date).slice(0, 10),
+    endDate: row.end_date ? String(row.end_date).slice(0, 10) : null,
     allowDone: Boolean(row.allow_done),
     createdAt: String(row.created_at),
   };
@@ -482,7 +482,7 @@ function toRecurringRow(data: Partial<Omit<RecurringTask, "id">> & { id?: string
     ...(data.weekdays !== undefined ? { weekdays: data.weekdays } : {}),
     ...(data.monthDay !== undefined ? { month_day: data.monthDay ?? null } : {}),
     ...(data.startDate !== undefined ? { start_date: data.startDate } : {}),
-    ...(data.endDate !== undefined ? { end_date: data.endDate } : {}),
+    ...(data.endDate !== undefined ? { end_date: data.endDate ?? null } : {}),
     ...(data.allowDone !== undefined ? { allow_done: data.allowDone } : {}),
     ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
   };

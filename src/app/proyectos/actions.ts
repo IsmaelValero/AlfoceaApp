@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
+import { todayKey } from "@/lib/dates";
 import { getCurrentMember } from "@/lib/queries";
 import {
   PROJECT_TASK_STATUSES,
@@ -14,7 +15,7 @@ import {
 } from "@/lib/types";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const KINDS: RecurrenceKind[] = ["weekly", "every_n_days", "monthly"];
+const KINDS: RecurrenceKind[] = ["weekly", "every_other_day", "every_n_days", "monthly"];
 const STATUSES = PROJECT_TASK_STATUSES.map((item) => item.value);
 
 function refresh(paths: string[] = []) {
@@ -59,14 +60,10 @@ function parseRecurring(formData: FormData) {
   const zone = text(formData, "zone");
   const manualId = text(formData, "manualId");
   const kind = text(formData, "kind") as RecurrenceKind;
-  const startDate = text(formData, "startDate");
-  const endDate = text(formData, "endDate");
   const allowDone = text(formData, "allowDone") === "si";
 
   if (!title) return { error: "La tarea necesita un titulo." };
   if (!KINDS.includes(kind)) return { error: "Elige cada cuanto se repite." };
-  if (!DATE_PATTERN.test(startDate) || !DATE_PATTERN.test(endDate)) return { error: "Indica desde cuando y hasta cuando." };
-  if (endDate < startDate) return { error: "La fecha final no puede ser anterior a la inicial." };
 
   let interval = 1;
   let weekdays: number[] = [];
@@ -81,7 +78,7 @@ function parseRecurring(formData: FormData) {
     if (weekdays.length === 0) return { error: "Elige al menos un dia de la semana." };
   } else if (kind === "every_n_days") {
     interval = Math.max(1, Number(text(formData, "interval")) || 1);
-  } else {
+  } else if (kind === "monthly") {
     monthDay = Number(text(formData, "monthDay"));
     if (!Number.isInteger(monthDay) || monthDay < 1 || monthDay > 31) {
       return { error: "El dia del mes tiene que estar entre 1 y 31." };
@@ -97,8 +94,6 @@ function parseRecurring(formData: FormData) {
       interval,
       weekdays,
       monthDay,
-      startDate,
-      endDate,
       allowDone,
     },
   };
@@ -197,7 +192,12 @@ export async function createRecurringTask(_prev: FormState, formData: FormData):
   const parsed = parseRecurring(formData);
   if ("error" in parsed) return { error: parsed.error };
 
-  const created = await db.recurringTasks.create({ ...parsed.data, createdAt: new Date().toISOString() });
+  const created = await db.recurringTasks.create({
+    ...parsed.data,
+    startDate: todayKey(),
+    endDate: null,
+    createdAt: new Date().toISOString(),
+  });
   refresh([`/proyectos/periodicas/${created.id}`]);
   redirect(`/proyectos/periodicas/${created.id}`);
 }
@@ -208,7 +208,7 @@ export async function updateRecurringTask(id: string, _prev: FormState, formData
   const parsed = parseRecurring(formData);
   if ("error" in parsed) return { error: parsed.error };
 
-  const updated = await db.recurringTasks.update(id, parsed.data);
+  const updated = await db.recurringTasks.update(id, { ...parsed.data, endDate: null });
   if (!updated) return { error: "Esa tarea ya no existe." };
   refresh([`/proyectos/periodicas/${id}`]);
   redirect(`/proyectos/periodicas/${id}`);

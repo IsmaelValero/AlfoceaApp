@@ -26,15 +26,15 @@ create table if not exists public.recurring_tasks (
   title text not null,
   zone text not null default '',
   manual_id text references public.manuals (id) on delete set null,
-  kind text not null check (kind in ('weekly', 'every_n_days', 'monthly')),
+  kind text not null check (kind in ('weekly', 'every_other_day', 'every_n_days', 'monthly')),
   interval integer not null default 1 check (interval >= 1),
   weekdays smallint[] not null default '{}',
   month_day smallint check (month_day between 1 and 31),
   start_date date not null,
-  end_date date not null,
+  end_date date,
   allow_done boolean not null default false,
   created_at timestamptz not null default now(),
-  check (end_date >= start_date)
+  check (end_date is null or end_date >= start_date)
 );
 
 create table if not exists public.recurring_completions (
@@ -54,3 +54,11 @@ alter table public.projects disable row level security;
 alter table public.project_tasks disable row level security;
 alter table public.recurring_tasks disable row level security;
 alter table public.recurring_completions disable row level security;
+
+-- Si la tabla ya se creo con fecha fin obligatoria, dejala abierta y admite "cada dos dias".
+alter table public.recurring_tasks alter column end_date drop not null;
+alter table public.recurring_tasks drop constraint if exists recurring_tasks_check;
+alter table public.recurring_tasks drop constraint if exists recurring_tasks_end_date_check;
+alter table public.recurring_tasks drop constraint if exists recurring_tasks_kind_check;
+alter table public.recurring_tasks add constraint recurring_tasks_end_date_check check (end_date is null or end_date >= start_date);
+alter table public.recurring_tasks add constraint recurring_tasks_kind_check check (kind in ('weekly', 'every_other_day', 'every_n_days', 'monthly'));

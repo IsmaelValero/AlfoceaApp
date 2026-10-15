@@ -9,7 +9,12 @@ export function weekdayIndex(date: DateKey) {
 }
 
 export function occursOn(task: RecurringTask, date: DateKey) {
-  if (date < task.startDate || date > task.endDate) return false;
+  if (date < task.startDate) return false;
+  if (task.endDate && date > task.endDate) return false;
+
+  if (task.kind === "every_other_day") {
+    return daysBetween(task.startDate, date) % 2 === 0;
+  }
 
   if (task.kind === "every_n_days") {
     const step = Math.max(1, task.interval);
@@ -28,7 +33,7 @@ export function occursOn(task: RecurringTask, date: DateKey) {
 
 export function occurrencesBetween(task: RecurringTask, start: DateKey, end: DateKey) {
   const from = start > task.startDate ? start : task.startDate;
-  const to = end < task.endDate ? end : task.endDate;
+  const to = task.endDate && task.endDate < end ? task.endDate : end;
   if (from > to) return [];
   return eachDay(from, to).filter((date) => occursOn(task, date));
 }
@@ -39,6 +44,7 @@ export function occurrencesInGrid(task: RecurringTask, dates: DateKey[]) {
 }
 
 export function describeRecurrence(task: RecurringTask) {
+  if (task.kind === "every_other_day") return "Cada dos dias";
   if (task.kind === "every_n_days") {
     return task.interval <= 1 ? "Cada dia" : `Cada ${task.interval} dias`;
   }
@@ -54,7 +60,8 @@ export function describeRecurrence(task: RecurringTask) {
 
 export function nextDate(task: RecurringTask, from: DateKey): DateKey | null {
   let cursor = from < task.startDate ? task.startDate : from;
-  for (let i = 0; i < 370 && cursor <= task.endDate; i++) {
+  const limit = task.endDate ?? addDays(cursor, 370);
+  for (let i = 0; i < 370 && cursor <= limit; i++) {
     if (occursOn(task, cursor)) return cursor;
     cursor = addDays(cursor, 1);
   }

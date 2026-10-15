@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { Field, FormActions, FormError } from "@/components/form-parts";
+import { Badge } from "@/components/ui";
 import { InfoTip } from "@/components/InfoTip";
 import { WEEKDAY_LABELS } from "@/lib/dates";
 import type { FormState } from "@/lib/forms";
@@ -60,6 +61,7 @@ export function RecurringTaskForm({
           onChange={(event) => setKind(event.target.value as RecurringTask["kind"])}
         >
           <option value="weekly">Cada semana</option>
+          <option value="every_other_day">Cada dos días</option>
           <option value="every_n_days">Cada ciertos dias</option>
           <option value="monthly">Cada mes</option>
         </select>
@@ -128,14 +130,10 @@ export function RecurringTaskForm({
         </Field>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Desde" htmlFor="startDate">
-          <input id="startDate" name="startDate" type="date" required className="field" defaultValue={task?.startDate} />
-        </Field>
-        <Field label="Hasta" htmlFor="endDate">
-          <input id="endDate" name="endDate" type="date" required className="field" defaultValue={task?.endDate} />
-        </Field>
-      </div>
+      <p className="flex items-center gap-2 text-sm text-muted">
+        <Badge tone="neutral">Sin fecha límite</Badge>
+        Se repite siempre, sin un periodo cerrado.
+      </p>
 
       <fieldset className="card px-4 py-3.5">
         <legend className="flex items-center gap-2 px-1 text-sm font-semibold text-ink">
