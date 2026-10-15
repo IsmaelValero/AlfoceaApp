@@ -2,9 +2,29 @@ import { randomUUID } from "node:crypto";
 
 import type { Collection, DataAdapter } from "@/lib/db/adapter";
 import { getSupabase } from "@/lib/supabase";
-import type { Entity, Family, Manual, Member, Reservation, Rule } from "@/lib/types";
+import type {
+  Entity,
+  Family,
+  Manual,
+  Member,
+  Project,
+  ProjectTask,
+  RecurringCompletion,
+  RecurringTask,
+  Reservation,
+  Rule,
+} from "@/lib/types";
 
-type Table = "families" | "members" | "reservations" | "manuals" | "rules";
+type Table =
+  | "families"
+  | "members"
+  | "reservations"
+  | "manuals"
+  | "rules"
+  | "projects"
+  | "project_tasks"
+  | "recurring_tasks"
+  | "recurring_completions";
 
 const FAMILY_COLUMNS = "id, name, color, notes";
 const MEMBER_COLUMNS = "id, family_id, name, last_name, role, phone, email";
@@ -362,6 +382,122 @@ class ReservationsCollection implements Collection<Reservation> {
   }
 }
 
+const PROJECT_COLUMNS = "id, name, description, zone, created_at, updated_at";
+const PROJECT_TASK_COLUMNS = "id, project_id, title, description, zone, status, assignee_ids, created_at";
+const RECURRING_COLUMNS =
+  "id, title, zone, manual_id, kind, interval, weekdays, month_day, start_date, end_date, allow_done, created_at";
+const COMPLETION_COLUMNS = "id, task_id, date, member_id, completed_at";
+
+function asStringList(value: unknown) {
+  return Array.isArray(value) ? value.map((item) => String(item)) : [];
+}
+
+function asNumberList(value: unknown) {
+  return Array.isArray(value) ? value.map((item) => Number(item)).filter((item) => Number.isFinite(item)) : [];
+}
+
+function mapProject(row: Record<string, unknown>): Project {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    description: String(row.description ?? ""),
+    zone: String(row.zone ?? ""),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+function mapProjectTask(row: Record<string, unknown>): ProjectTask {
+  return {
+    id: String(row.id),
+    projectId: String(row.project_id),
+    title: String(row.title),
+    description: String(row.description ?? ""),
+    zone: String(row.zone ?? ""),
+    status: row.status as ProjectTask["status"],
+    assigneeIds: asStringList(row.assignee_ids),
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapRecurringTask(row: Record<string, unknown>): RecurringTask {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    zone: String(row.zone ?? ""),
+    manualId: row.manual_id ? String(row.manual_id) : undefined,
+    kind: row.kind as RecurringTask["kind"],
+    interval: Number(row.interval) || 1,
+    weekdays: asNumberList(row.weekdays),
+    monthDay: row.month_day ? Number(row.month_day) : undefined,
+    startDate: String(row.start_date),
+    endDate: String(row.end_date),
+    allowDone: Boolean(row.allow_done),
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapCompletion(row: Record<string, unknown>): RecurringCompletion {
+  return {
+    id: String(row.id),
+    taskId: String(row.task_id),
+    date: String(row.date).slice(0, 10),
+    memberId: row.member_id ? String(row.member_id) : undefined,
+    completedAt: String(row.completed_at),
+  };
+}
+
+function toProjectRow(data: Partial<Omit<Project, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.name !== undefined ? { name: data.name } : {}),
+    ...(data.description !== undefined ? { description: data.description } : {}),
+    ...(data.zone !== undefined ? { zone: data.zone } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+    ...(data.updatedAt !== undefined ? { updated_at: data.updatedAt } : {}),
+  };
+}
+
+function toProjectTaskRow(data: Partial<Omit<ProjectTask, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.projectId !== undefined ? { project_id: data.projectId } : {}),
+    ...(data.title !== undefined ? { title: data.title } : {}),
+    ...(data.description !== undefined ? { description: data.description } : {}),
+    ...(data.zone !== undefined ? { zone: data.zone } : {}),
+    ...(data.status !== undefined ? { status: data.status } : {}),
+    ...(data.assigneeIds !== undefined ? { assignee_ids: data.assigneeIds } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+  };
+}
+
+function toRecurringRow(data: Partial<Omit<RecurringTask, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.title !== undefined ? { title: data.title } : {}),
+    ...(data.zone !== undefined ? { zone: data.zone } : {}),
+    ...(data.manualId !== undefined ? { manual_id: data.manualId ?? null } : {}),
+    ...(data.kind !== undefined ? { kind: data.kind } : {}),
+    ...(data.interval !== undefined ? { interval: data.interval } : {}),
+    ...(data.weekdays !== undefined ? { weekdays: data.weekdays } : {}),
+    ...(data.monthDay !== undefined ? { month_day: data.monthDay ?? null } : {}),
+    ...(data.startDate !== undefined ? { start_date: data.startDate } : {}),
+    ...(data.endDate !== undefined ? { end_date: data.endDate } : {}),
+    ...(data.allowDone !== undefined ? { allow_done: data.allowDone } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+  };
+}
+
+function toCompletionRow(data: Partial<Omit<RecurringCompletion, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.taskId !== undefined ? { task_id: data.taskId } : {}),
+    ...(data.date !== undefined ? { date: data.date } : {}),
+    ...(data.memberId !== undefined ? { member_id: data.memberId ?? null } : {}),
+    ...(data.completedAt !== undefined ? { completed_at: data.completedAt } : {}),
+  };
+}
+
 export function createSupabaseAdapter(): DataAdapter {
   return {
     families: new SupabaseCollection<Family>("families", FAMILY_COLUMNS, mapFamily, toFamilyRow),
@@ -369,5 +505,24 @@ export function createSupabaseAdapter(): DataAdapter {
     reservations: new ReservationsCollection(),
     manuals: new ManualsCollection(),
     rules: new SupabaseCollection<Rule>("rules", RULE_COLUMNS, mapRule, toRuleRow),
+    projects: new SupabaseCollection<Project>("projects", PROJECT_COLUMNS, mapProject, toProjectRow),
+    projectTasks: new SupabaseCollection<ProjectTask>(
+      "project_tasks",
+      PROJECT_TASK_COLUMNS,
+      mapProjectTask,
+      toProjectTaskRow,
+    ),
+    recurringTasks: new SupabaseCollection<RecurringTask>(
+      "recurring_tasks",
+      RECURRING_COLUMNS,
+      mapRecurringTask,
+      toRecurringRow,
+    ),
+    recurringCompletions: new SupabaseCollection<RecurringCompletion>(
+      "recurring_completions",
+      COMPLETION_COLUMNS,
+      mapCompletion,
+      toCompletionRow,
+    ),
   };
 }

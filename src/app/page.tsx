@@ -1,21 +1,23 @@
 import Link from "next/link";
 
 import { HomeGallery } from "@/components/HomeGallery";
+import { MarkDoneButton } from "@/components/MarkDoneButton";
 import { ReservationCard } from "@/components/ReservationCard";
 import { TopBar } from "@/components/TopBar";
 import { WeekStrip } from "@/components/WeekStrip";
-import { Badge } from "@/components/ui";
-import { formatRange, relativeLabel } from "@/lib/dates";
-import { getCurrentMember, getHomeData, listReservations } from "@/lib/queries";
+import { Badge, BUTTON_STYLES } from "@/components/ui";
+import { formatDayMonth, formatRange, relativeLabel } from "@/lib/dates";
+import { getCurrentMember, getHomeData, listReservations, listWeekTasks } from "@/lib/queries";
 
 // Los datos viven en disco y cambian al usar la app: nada de cache estatica.
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [home, current, reservations] = await Promise.all([
+  const [home, current, reservations, weekTasks] = await Promise.all([
     getHomeData(),
     getCurrentMember(),
     listReservations(),
+    listWeekTasks(),
   ]);
   const { stats } = home;
 
@@ -60,6 +62,32 @@ export default async function HomePage() {
               <Stat label="Personas" value={stats.peopleThisWeek} />
             </dl>
           </section>
+
+          {weekTasks.length > 0 ? (
+            <section className="mb-5">
+              <h2 className="section-title mb-2">Tareas de la semana</h2>
+              <ul className="space-y-2.5">
+                {weekTasks.map((item) => (
+                  <li key={`${item.task.id}-${item.date}`} className="card px-4 py-3.5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">{formatDayMonth(item.date)}</p>
+                    <p className="mt-1 font-semibold text-ink">{item.task.title}</p>
+                    {item.task.zone ? <p className="mt-0.5 text-sm text-muted">{item.task.zone}</p> : null}
+                    {item.doneBy ? <p className="mt-1 text-sm text-muted">Hecha por {item.doneBy}</p> : null}
+                    <div className="mt-3 flex flex-col gap-2">
+                      {item.manual ? (
+                        <Link href={`/manuales/${item.manual.id}`} className={BUTTON_STYLES.secondary}>
+                          Ver instrucciones
+                        </Link>
+                      ) : null}
+                      {item.task.allowDone ? (
+                        <MarkDoneButton taskId={item.task.id} date={item.date} done={item.done} />
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           {myReservations.length > 0 ? (
             <section className="mb-5">

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { formatRange } from "@/lib/dates";
 import { text, type FormState } from "@/lib/forms";
 import { DAY_CLOSE, DAY_OPEN, formatHours, isTime } from "@/lib/hours";
+import { overlapsRedBand } from "@/lib/reservation-rules";
 import { findOverlapping, getCurrentMember } from "@/lib/queries";
 import { getAdminSession } from "@/lib/authz";
 import {
@@ -119,6 +120,9 @@ export async function requestReservation(_prevState: FormState, formData: FormDa
     endTime,
     guests,
     status: "pendiente",
+    notes: overlapsRedBand(day, startTime, endTime)
+      ? "Franja roja: hace falta autorización del administrador. Revisar las normas de uso."
+      : undefined,
     createdAt: new Date().toISOString(),
   });
 

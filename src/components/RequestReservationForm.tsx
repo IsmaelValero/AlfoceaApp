@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { Field, FormActions, FormError } from "@/components/form-parts";
 import type { FormState } from "@/lib/forms";
 import { DAY_CLOSE, DAY_OPEN } from "@/lib/hours";
+import { overlapsRedBand } from "@/lib/reservation-rules";
 import { RESERVATION_ZONES } from "@/lib/types";
 
 export function RequestReservationForm({
@@ -26,6 +28,7 @@ export function RequestReservationForm({
   const [guests, setGuests] = useState("2");
   const [eventType, setEventType] = useState("");
   const [zone, setZone] = useState<(typeof RESERVATION_ZONES)[number]>(RESERVATION_ZONES[0]);
+  const redBand = overlapsRedBand(day, startTime, endTime);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -100,6 +103,19 @@ export function RequestReservationForm({
           onChange={(event) => setEventType(event.target.value)}
         />
       </Field>
+
+      {redBand ? (
+        <div role="status" className="rounded-2xl border border-warn/30 bg-warn-soft px-4 py-3 text-sm text-warn">
+          <p className="font-semibold">Franja roja</p>
+          <p className="mt-1 leading-relaxed">
+            Este horario cae en franja roja (festivos, sábados y domingos de 12:00 a 19:30). Hace falta
+            autorización del administrador. Revisa las normas de uso.
+          </p>
+          <Link href="/normas" className="mt-2 inline-block font-semibold underline">
+            Ver normas de uso
+          </Link>
+        </div>
+      ) : null}
 
       <Field label="Zona" htmlFor="zone">
         <select id="zone" name="zone" className="field" required value={zone} onChange={(event) => setZone(event.target.value as (typeof RESERVATION_ZONES)[number])}>

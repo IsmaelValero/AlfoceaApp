@@ -1,4 +1,15 @@
-import type { Entity, Family, Manual, Member, Reservation, Rule } from "@/lib/types";
+import type {
+  Entity,
+  Family,
+  Manual,
+  Member,
+  Project,
+  ProjectTask,
+  RecurringCompletion,
+  RecurringTask,
+  Reservation,
+  Rule,
+} from "@/lib/types";
 
 /**
  * Contrato de acceso a datos. Las pantallas solo hablan con esta interfaz,
@@ -19,4 +30,8 @@ export interface DataAdapter {
   reservations: Collection<Reservation>;
   manuals: Collection<Manual>;
   rules: Collection<Rule>;
+  projects: Collection<Project>;
+  projectTasks: Collection<ProjectTask>;
+  recurringTasks: Collection<RecurringTask>;
+  recurringCompletions: Collection<RecurringCompletion>;
 }

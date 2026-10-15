@@ -2,16 +2,17 @@ import { ModuleTile } from "@/components/ModuleTile";
 import { TopBar } from "@/components/TopBar";
 import { BookIcon, BoxIcon, CalendarIcon, ShieldIcon, TasksIcon, UsersIcon } from "@/components/icons";
 import { todayKey } from "@/lib/dates";
-import { listFamiliesWithMembers, listManuals, listReservations, listRules } from "@/lib/queries";
+import { listFamiliesWithMembers, listManuals, listReservations, listRules, loadWorkData } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function ModulesPage() {
-  const [reservations, manuals, rules, families] = await Promise.all([
+  const [reservations, manuals, rules, families, work] = await Promise.all([
     listReservations(),
     listManuals(),
     listRules(),
     listFamiliesWithMembers(),
+    loadWorkData(),
   ]);
 
   const today = todayKey();
@@ -56,9 +57,13 @@ export default async function ModulesPage() {
         <ModuleTile
           href="/proyectos"
           title="Proyectos y tareas"
-          description="Obras y mejoras pendientes"
+          description="Obras, mejoras y tareas periodicas"
           icon={<TasksIcon />}
-          soon
+          meta={
+            work.missing
+              ? "Pendiente de base de datos"
+              : `${work.projects.length} proyectos · ${work.recurring.length} periodicas`
+          }
         />
         <ModuleTile
           href="/inventario"

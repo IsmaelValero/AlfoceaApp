@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { MarkDoneButton } from "@/components/MarkDoneButton";
 import { BUTTON_STYLES } from "@/components/ui";
 import {
   addMonths,
@@ -15,18 +16,33 @@ import {
   WEEKDAY_LABELS,
   type DateKey,
 } from "@/lib/dates";
-import { RESERVATION_ZONES } from "@/lib/types";
 import { dayHasOpening, formatHours } from "@/lib/hours";
+import { occursOn } from "@/lib/recurrence";
+import { RESERVATION_ZONES, type RecurringTask } from "@/lib/types";
 import type { ReservationView } from "@/lib/queries";
+
+export interface CalendarCompletion {
+  taskId: string;
+  date: string;
+  memberName?: string;
+}
 
 interface CalendarProps {
   reservations: ReservationView[];
   today: DateKey;
   /** Dia que debe quedar marcado al abrir, por ejemplo al volver de una solicitud. */
   initialDay?: DateKey;
+  tasks?: RecurringTask[];
+  completions?: CalendarCompletion[];
 }
 
-export function Calendar({ reservations, today, initialDay }: CalendarProps) {
+export function Calendar({
+  reservations,
+  today,
+  initialDay,
+  tasks = [],
+  completions = [],
+}: CalendarProps) {
   const [month, setMonth] = useState<DateKey>(() => startOfMonth(initialDay ?? today));
   const [selected, setSelected] = useState<DateKey>(initialDay ?? today);
 
@@ -52,6 +68,7 @@ export function Calendar({ reservations, today, initialDay }: CalendarProps) {
 
   const weeks = useMemo(() => monthGrid(month), [month]);
   const selectedReservations = reservationsOn.get(selected) ?? [];
+  const selectedTasks = tasks.filter((task) => occursOn(task, selected));
   const canRequest = dayHasOpening(selectedReservations, RESERVATION_ZONES);
 
   function goToToday() {
@@ -120,6 +137,12 @@ export function Calendar({ reservations, today, initialDay }: CalendarProps) {
                       aria-hidden="true"
                     />
                   ))}
+                  {tasks.some((task) => occursOn(task, date)) ? (
+                    <span
+                      className={["h-1.5 w-1.5 rounded-sm", isSelected || isToday ? "bg-white" : "bg-accent"].join(" ")}
+                      aria-hidden="true"
+                    />
+                  ) : null}
                 </span>
               </button>
             );
@@ -156,6 +179,36 @@ export function Calendar({ reservations, today, initialDay }: CalendarProps) {
         ) : (
           <p className="mt-2 text-sm text-muted">Nadie ha reservado este dia.</p>
         )}
+
+        {selectedTasks.length > 0 ? (
+          <ul className="mt-4 space-y-3 border-t border-line pt-3">
+            {selectedTasks.map((task) => {
+              const completion = completions.find((item) => item.taskId === task.id && item.date === selected);
+              return (
+                <li key={task.id}>
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted">Tarea</p>
+                  <p className="font-semibold text-ink">{task.title}</p>
+                  {task.zone ? <p className="text-sm text-muted">{task.zone}</p> : null}
+                  {completion ? (
+                    <p className="mt-1 text-sm text-muted">
+                      Hecha{completion.memberName ? ` por ${completion.memberName}` : ""}
+                    </p>
+                  ) : null}
+                  <div className="mt-2 flex flex-col gap-2">
+                    {task.manualId ? (
+                      <Link href={`/manuales/${task.manualId}`} className={BUTTON_STYLES.secondary}>
+                        Ver instrucciones
+                      </Link>
+                    ) : null}
+                    {task.allowDone ? (
+                      <MarkDoneButton taskId={task.id} date={selected} done={Boolean(completion)} />
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
 
         {canRequest ? (
           <Link href={`/reservas/solicitar?dia=${selected}`} className={`${BUTTON_STYLES.primary} mt-4 w-full`}>

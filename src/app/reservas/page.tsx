@@ -4,7 +4,7 @@ import { ReservationCard } from "@/components/ReservationCard";
 import { ModuleTitle } from "@/components/ui";
 import { getAdminSession } from "@/lib/authz";
 import { todayKey } from "@/lib/dates";
-import { getCurrentMember, listReservations, type ReservationView } from "@/lib/queries";
+import { getCurrentMember, listReservations, loadWorkData, type ReservationView } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +16,11 @@ export default async function ReservationsPage({
   searchParams: Promise<{ dia?: string }>;
 }) {
   const { dia } = await searchParams;
-  const [reservations, current, admin] = await Promise.all([
+  const [reservations, current, admin, work] = await Promise.all([
     listReservations(),
     getCurrentMember(),
     getAdminSession(),
+    loadWorkData(),
   ]);
   const today = todayKey();
   const initialDay = dia && DATE_PATTERN.test(dia) ? dia : today;
@@ -31,7 +32,17 @@ export default async function ReservationsPage({
       <ModuleTitle title="Calendario" />
       {admin ? <AdminCreateLink href="/reservas/nueva" label="Nueva reserva" /> : null}
 
-      <Calendar reservations={reservations} today={today} initialDay={initialDay} />
+      <Calendar
+        reservations={reservations}
+        today={today}
+        initialDay={initialDay}
+        tasks={work.recurring}
+        completions={work.completions.map((completion) => ({
+          taskId: completion.taskId,
+          date: completion.date,
+          memberName: work.members.find((member) => member.id === completion.memberId)?.name,
+        }))}
+      />
 
       {pending.length > 0 ? (
         <section className="mt-6">

@@ -9,8 +9,20 @@ import {
   type DateKey,
 } from "@/lib/dates";
 import { timesOverlap } from "@/lib/hours";
+import { occurrencesBetween } from "@/lib/recurrence";
 import { getSessionMemberId } from "@/lib/session";
-import type { Family, Manual, ManualCategory, Member, Reservation, Rule } from "@/lib/types";
+import type {
+  Family,
+  Manual,
+  ManualCategory,
+  Member,
+  Project,
+  ProjectTask,
+  RecurringCompletion,
+  RecurringTask,
+  Reservation,
+  Rule,
+} from "@/lib/types";
 import { MANUAL_CATEGORIES } from "@/lib/types";
 
 /** Reserva con la familia y el miembro ya resueltos, lista para pintar. */
@@ -226,4 +238,74 @@ export async function getHomeData(): Promise<HomeData> {
       members: members.length,
     },
   };
+}
+
+export interface WorkData {
+  missing: boolean;
+  projects: Project[];
+  tasks: ProjectTask[];
+  recurring: RecurringTask[];
+  completions: RecurringCompletion[];
+  members: Member[];
+  manuals: Manual[];
+}
+
+function isMissingWorkTable(error: unknown) {
+  const record = error && typeof error === "object" ? (error as { code?: string; message?: string }) : {};
+  const message = record.message ?? (error instanceof Error ? error.message : String(error));
+  return record.code === "42P01" || /does not exist|schema cache|project_tasks|recurring_tasks/i.test(message);
+}
+
+const EMPTY_WORK: WorkData = {
+  missing: false,
+  projects: [],
+  tasks: [],
+  recurring: [],
+  completions: [],
+  members: [],
+  manuals: [],
+};
+
+export async function loadWorkData(): Promise<WorkData> {
+  try {
+    const [projects, tasks, recurring, completions, members, manuals] = await Promise.all([
+      db.projects.list(),
+      db.projectTasks.list(),
+      db.recurringTasks.list(),
+      db.recurringCompletions.list(),
+      db.members.list(),
+      db.manuals.list(),
+    ]);
+    return { missing: false, projects, tasks, recurring, completions, members, manuals };
+  } catch (error) {
+    if (isMissingWorkTable(error)) return { ...EMPTY_WORK, missing: true };
+    throw error;
+  }
+}
+
+export interface WeekTask {
+  task: RecurringTask;
+  date: DateKey;
+  manual: Manual | null;
+  done: boolean;
+  doneBy?: string;
+}
+
+export async function listWeekTasks(today = todayKey()): Promise<WeekTask[]> {
+  const work = await loadWorkData();
+  if (work.missing) return [];
+  const start = startOfWeek(today);
+  const end = endOfWeek(today);
+  const items: WeekTask[] = [];
+
+  for (const task of work.recurring) {
+    const manual = task.manualId ? (work.manuals.find((item) => item.id === task.manualId) ?? null) : null;
+    for (const date of occurrencesBetween(task, start, end)) {
+      const completion = work.completions.find((item) => item.taskId === task.id && item.date === date);
+      const member = completion?.memberId ? work.members.find((item) => item.id === completion.memberId) : undefined;
+      items.push({ task, date, manual, done: Boolean(completion), doneBy: member?.name });
+    }
+  }
+
+  return items.sort((a, b) => a.date.localeCompare(b.date) || a.task.title.localeCompare(b.task.title));
 }

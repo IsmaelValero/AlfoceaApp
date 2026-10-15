@@ -4,7 +4,18 @@ import path from "node:path";
 
 import type { Collection, DataAdapter } from "@/lib/db/adapter";
 import { seedFamilies, seedManuals, seedMembers, seedReservations, seedRules } from "@/lib/db/seed";
-import type { Entity, Family, Manual, Member, Reservation, Rule } from "@/lib/types";
+import type {
+  Entity,
+  Family,
+  Manual,
+  Member,
+  Project,
+  ProjectTask,
+  RecurringCompletion,
+  RecurringTask,
+  Reservation,
+  Rule,
+} from "@/lib/types";
 
 /**
  * Adaptador de desarrollo: un fichero JSON por coleccion dentro de /data.
@@ -114,5 +125,9 @@ export function createJsonAdapter(): DataAdapter {
     reservations: new JsonCollection<Reservation>("reservations", seedReservations),
     manuals: new JsonCollection<Manual>("manuals", seedManuals),
     rules: new JsonCollection<Rule>("rules", seedRules),
+    projects: new JsonCollection<Project>("projects", () => []),
+    projectTasks: new JsonCollection<ProjectTask>("project-tasks", () => []),
+    recurringTasks: new JsonCollection<RecurringTask>("recurring-tasks", () => []),
+    recurringCompletions: new JsonCollection<RecurringCompletion>("recurring-completions", () => []),
   };
 }

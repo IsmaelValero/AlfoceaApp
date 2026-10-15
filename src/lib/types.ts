@@ -166,3 +166,62 @@ export interface Rule extends Entity {
   pinned: boolean;
   updatedAt: string;
 }
+
+/* --------------------------- Proyectos y tareas ---------------------------- */
+
+export type ProjectTaskStatus = "sin_comenzar" | "en_curso" | "terminada";
+
+export const PROJECT_TASK_STATUSES: { value: ProjectTaskStatus; label: string }[] = [
+  { value: "sin_comenzar", label: "Sin comenzar" },
+  { value: "en_curso", label: "En curso" },
+  { value: "terminada", label: "Terminada" },
+];
+
+export interface Project extends Entity {
+  name: string;
+  description: string;
+  /** Texto libre, distinto de las zonas de reserva. */
+  zone: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectTask extends Entity {
+  projectId: string;
+  title: string;
+  description: string;
+  zone: string;
+  status: ProjectTaskStatus;
+  /** Miembros asignados. Al menos uno. */
+  assigneeIds: string[];
+  createdAt: string;
+}
+
+export type RecurrenceKind = "weekly" | "every_n_days" | "monthly";
+
+export interface RecurringTask extends Entity {
+  title: string;
+  zone: string;
+  /** Manual con las instrucciones, si lo hay. */
+  manualId?: string;
+  kind: RecurrenceKind;
+  /** Cada N semanas o cada N dias. En mensual no se usa. */
+  interval: number;
+  /** 0 = lunes ... 6 = domingo. Solo en semanal. */
+  weekdays: number[];
+  /** Dia del mes, 1-31. Solo en mensual. */
+  monthDay?: number;
+  startDate: string;
+  endDate: string;
+  /** Si es true, cualquiera puede marcar cada ocurrencia como hecha. */
+  allowDone: boolean;
+  createdAt: string;
+}
+
+export interface RecurringCompletion extends Entity {
+  taskId: string;
+  /** Dia concreto "YYYY-MM-DD". */
+  date: string;
+  memberId?: string;
+  completedAt: string;
+}

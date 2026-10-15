@@ -23,6 +23,18 @@ export function parentHref(pathname: string, search = ""): string | null {
   const member = pathname.match(/^\/familias\/([^/]+)\/miembros\/[^/]+$/);
   if (member) return `/familias/${member[1]}`;
 
+  if (pathname === "/proyectos/nuevo" || pathname === "/proyectos/periodicas/nueva") return "/proyectos";
+  const periodicEdit = pathname.match(/^\/proyectos\/periodicas\/([^/]+)\/editar$/);
+  if (periodicEdit) return `/proyectos/periodicas/${periodicEdit[1]}`;
+  if (/^\/proyectos\/periodicas\/[^/]+$/.test(pathname)) return "/proyectos";
+  const taskEdit = pathname.match(/^\/proyectos\/([^/]+)\/tareas\/[^/]+\/editar$/);
+  if (taskEdit) return `/proyectos/${taskEdit[1]}`;
+  const taskNew = pathname.match(/^\/proyectos\/([^/]+)\/tareas\/nueva$/);
+  if (taskNew) return `/proyectos/${taskNew[1]}`;
+  const projectEdit = pathname.match(/^\/proyectos\/([^/]+)\/editar$/);
+  if (projectEdit) return `/proyectos/${projectEdit[1]}`;
+  if (/^\/proyectos\/[^/]+$/.test(pathname)) return "/proyectos";
+
   const edit = pathname.match(/^\/(reservas|manuales|normas|familias)\/([^/]+)\/editar$/);
   if (edit) return `/${edit[1]}/${edit[2]}`;
 
@@ -72,6 +84,9 @@ export function floatingNavFor(pathname: string): FloatingNavConfig | null {
   }
   if (/^\/familias\/[^/]+$/.test(pathname)) {
     return { href: "/familias", icon: "users", label: "Volver a Familias" };
+  }
+  if (/^\/proyectos\/periodicas\/[^/]+$/.test(pathname) || /^\/proyectos\/[^/]+$/.test(pathname)) {
+    return { href: "/proyectos", icon: "tasks", label: "Volver a Proyectos" };
   }
 
   return null;
