@@ -5,8 +5,6 @@ import { readSession, SESSION_COOKIE } from "@/lib/session-token";
 
 function isPublicAsset(pathname: string) {
   if (
-    pathname.startsWith("/api/") ||
-    pathname === "/salud" ||
     pathname === "/favicon.ico" ||
     pathname === "/favicon.png" ||
     pathname === "/icon" ||
@@ -27,7 +25,7 @@ function isPublicAsset(pathname: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Assets, iconos y diagnostico no pasan por la pantalla de login.
+  // Assets e iconos no pasan por la pantalla de login.
   if (isPublicAsset(pathname)) return NextResponse.next();
 
   const memberId = await readSession(request.cookies.get(SESSION_COOKIE)?.value);
@@ -45,6 +43,7 @@ export const config = {
   matcher: [
     /*
      * Auth en paginas de la app. Se excluyen assets, iconos metadata y la galeria.
+     * /api y /salud exigen sesion; las rutas comprueban admin.
      */
     "/((?!_next/static|_next/image|favicon.ico|favicon.png|icon(?:\\..*)?|apple-icon(?:\\..*)?|alfocea-logo.png|login-bg.png|amanecer-bg.png|galeria/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],

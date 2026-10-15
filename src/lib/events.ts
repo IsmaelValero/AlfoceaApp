@@ -15,8 +15,11 @@ export function monthName(monthKey: string) {
   return MONTH_LABELS[month - 1] ?? monthKey;
 }
 
-/** Sábados, domingos y findes completos de ese mes. */
-export function weekendChoices(monthKey: string): WeekendChoice[] {
+/**
+ * Sábados, domingos y findes de ese mes.
+ * Si se pasa `notBefore`, se ocultan opciones cuyo finya ha pasado.
+ */
+export function weekendChoices(monthKey: string, notBefore?: DateKey): WeekendChoice[] {
   const [year, month] = monthKey.split("-").map(Number);
   const cursor = new Date(year, month - 1, 1, 12);
   const end = new Date(year, month, 0, 12);
@@ -24,13 +27,7 @@ export function weekendChoices(monthKey: string): WeekendChoice[] {
 
   if (cursor.getDay() === 0) {
     const sunday = toKey(cursor);
-    const saturdayDate = new Date(cursor);
-    saturdayDate.setDate(saturdayDate.getDate() - 1);
-    const saturday = toKey(saturdayDate);
-    choices.push(
-      { label: `Domingo ${dayLabel(sunday)}`, startDate: sunday, endDate: sunday },
-      { label: `Finde ${spanLabel(saturday, sunday)}`, startDate: saturday, endDate: sunday },
-    );
+    choices.push({ label: `Domingo ${dayLabel(sunday)}`, startDate: sunday, endDate: sunday });
   }
 
   while (cursor <= end) {
@@ -39,16 +36,22 @@ export function weekendChoices(monthKey: string): WeekendChoice[] {
       const sundayDate = new Date(cursor);
       sundayDate.setDate(sundayDate.getDate() + 1);
       const sunday = toKey(sundayDate);
-      choices.push(
-        { label: `Sábado ${dayLabel(saturday)}`, startDate: saturday, endDate: saturday },
-        { label: `Domingo ${dayLabel(sunday)}`, startDate: sunday, endDate: sunday },
-        { label: `Finde ${spanLabel(saturday, sunday)}`, startDate: saturday, endDate: sunday },
-      );
+      const sundayInMonth = sundayDate.getMonth() === month - 1;
+      choices.push({ label: `Sábado ${dayLabel(saturday)}`, startDate: saturday, endDate: saturday });
+      if (sundayInMonth) {
+        choices.push({ label: `Domingo ${dayLabel(sunday)}`, startDate: sunday, endDate: sunday });
+        choices.push({
+          label: `Finde ${spanLabel(saturday, sunday)}`,
+          startDate: saturday,
+          endDate: sunday,
+        });
+      }
     }
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  return choices;
+  if (!notBefore) return choices;
+  return choices.filter((choice) => choice.endDate >= notBefore);
 }
 
 function dayLabel(key: DateKey) {

@@ -15,8 +15,8 @@ export type MemberRole = "admin" | "adulto" | "joven" | "invitado";
 
 export const MEMBER_ROLES: { value: MemberRole; label: string; description: string }[] = [
   { value: "admin", label: "Administrador", description: "Gestiona la app, aprueba reservas y edita normas" },
-  { value: "adulto", label: "Adulto", description: "Puede reservar y crear tareas" },
-  { value: "joven", label: "Joven", description: "Puede consultar y apuntarse a reservas" },
+  { value: "adulto", label: "Adulto", description: "Puede reservar, votar y actualizar tareas asignadas" },
+  { value: "joven", label: "Joven", description: "Puede reservar, votar y participar (cuenta propia, 18+)" },
   { value: "invitado", label: "Invitado", description: "Solo consulta" },
 ];
 
@@ -274,7 +274,7 @@ export interface PollVote extends Entity {
   pollId: string;
   optionId: string;
   familyId: string;
-  memberId: string;
+  memberId?: string;
   peopleCount: number;
   createdAt: string;
 }
@@ -296,7 +296,7 @@ export interface FamilyEvent extends Entity {
 export interface EventRsvp extends Entity {
   eventId: string;
   familyId: string;
-  memberId: string;
+  memberId?: string;
   status: RsvpStatus;
   peopleCount: number;
   createdAt: string;

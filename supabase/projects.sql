@@ -50,10 +50,10 @@ create index if not exists project_tasks_project_id_idx on public.project_tasks 
 create index if not exists recurring_tasks_dates_idx on public.recurring_tasks (start_date, end_date);
 create index if not exists recurring_completions_task_date_idx on public.recurring_completions (task_id, date);
 
-alter table public.projects disable row level security;
-alter table public.project_tasks disable row level security;
-alter table public.recurring_tasks disable row level security;
-alter table public.recurring_completions disable row level security;
+alter table public.projects enable row level security;
+alter table public.project_tasks enable row level security;
+alter table public.recurring_tasks enable row level security;
+alter table public.recurring_completions enable row level security;
 
 -- Si la tabla ya se creo con fecha fin obligatoria, dejala abierta y admite "cada dos dias".
 alter table public.recurring_tasks alter column end_date drop not null;

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { getAdminSession } from "@/lib/authz";
+import { canMemberWrite, getAdminSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
 import { todayKey } from "@/lib/dates";
@@ -166,12 +166,16 @@ export async function updateProjectTask(
 }
 
 export async function setProjectTaskStatus(formData: FormData) {
+  const current = await getCurrentMember();
+  if (!current || !canMemberWrite(current.member)) return;
   const admin = await getAdminSession();
-  if (!admin) return;
   const id = text(formData, "id");
   const projectId = text(formData, "projectId");
   const status = text(formData, "status") as ProjectTaskStatus;
   if (!STATUSES.includes(status)) return;
+  const task = await db.projectTasks.get(id);
+  if (!task || task.projectId !== projectId) return;
+  if (!admin && !task.assigneeIds.includes(current.member.id)) return;
   await db.projectTasks.update(id, { status });
   refresh([`/proyectos/${projectId}`]);
 }
@@ -229,7 +233,7 @@ export async function deleteRecurringTask(formData: FormData) {
 
 export async function toggleRecurringDone(formData: FormData) {
   const current = await getCurrentMember();
-  if (!current) return;
+  if (!current || !canMemberWrite(current.member)) return;
 
   const taskId = text(formData, "taskId");
   const date = text(formData, "date");
@@ -240,15 +244,20 @@ export async function toggleRecurringDone(formData: FormData) {
 
   const completions = await db.recurringCompletions.list();
   const existing = completions.find((item) => item.taskId === taskId && item.date === date);
-  if (existing) {
-    await db.recurringCompletions.remove(existing.id);
-  } else {
-    await db.recurringCompletions.create({
-      taskId,
-      date,
-      memberId: current.member.id,
-      completedAt: new Date().toISOString(),
-    });
+  try {
+    if (existing) {
+      await db.recurringCompletions.remove(existing.id);
+    } else {
+      await db.recurringCompletions.create({
+        taskId,
+        date,
+        memberId: current.member.id,
+        completedAt: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    const code = error && typeof error === "object" ? (error as { code?: string }).code : undefined;
+    if (code !== "23505") throw error;
   }
   refresh([`/proyectos/periodicas/${taskId}`]);
 }

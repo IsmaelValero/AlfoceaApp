@@ -14,6 +14,11 @@ export function isAdmin(member: Member | null | undefined) {
   return hasAdminRole(member);
 }
 
+/** Invitado solo consulta. El resto de cuentas (adulto, joven, admin) pueden escribir. */
+export function canMemberWrite(member: Member | null | undefined) {
+  return Boolean(member && member.role !== "invitado");
+}
+
 /** True si el miembro es admin y no esta viendo la app como usuario. */
 export async function isActingAsAdmin(member: Member | null | undefined) {
   if (!hasAdminRole(member)) return false;
@@ -32,4 +37,13 @@ export async function getAdminSession() {
   const current = await getCurrentMember();
   if (!current || !(await isActingAsAdmin(current.member))) return null;
   return current;
+}
+
+export async function requireWritableMember() {
+  const current = await getCurrentMember();
+  if (!current) redirect("/login");
+  if (!canMemberWrite(current.member)) {
+    return { error: "Tu cuenta es de invitados: solo puedes consultar." as const, current: null };
+  }
+  return { error: null, current };
 }

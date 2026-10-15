@@ -27,6 +27,13 @@ export interface CalendarCompletion {
   memberName?: string;
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+}
+
 interface CalendarProps {
   reservations: ReservationView[];
   today: DateKey;
@@ -34,6 +41,7 @@ interface CalendarProps {
   initialDay?: DateKey;
   tasks?: RecurringTask[];
   completions?: CalendarCompletion[];
+  events?: CalendarEvent[];
 }
 
 export function Calendar({
@@ -42,6 +50,7 @@ export function Calendar({
   initialDay,
   tasks = [],
   completions = [],
+  events = [],
 }: CalendarProps) {
   const [month, setMonth] = useState<DateKey>(() => startOfMonth(initialDay ?? today));
   const [selected, setSelected] = useState<DateKey>(initialDay ?? today);
@@ -69,6 +78,7 @@ export function Calendar({
   const weeks = useMemo(() => monthGrid(month), [month]);
   const selectedReservations = reservationsOn.get(selected) ?? [];
   const selectedTasks = tasks.filter((task) => occursOn(task, selected));
+  const selectedEvents = events.filter((event) => event.startDate <= selected && selected <= event.endDate);
   const canRequest = dayHasOpening(selectedReservations, RESERVATION_ZONES);
 
   function goToToday() {
@@ -143,6 +153,15 @@ export function Calendar({
                       aria-hidden="true"
                     />
                   ) : null}
+                  {events.some((event) => event.startDate <= date && date <= event.endDate) ? (
+                    <span
+                      className={[
+                        "h-1.5 w-1.5 rounded-full ring-1",
+                        isSelected || isToday ? "bg-white ring-white/40" : "bg-brand ring-brand/30",
+                      ].join(" ")}
+                      aria-hidden="true"
+                    />
+                  ) : null}
                 </span>
               </button>
             );
@@ -179,6 +198,19 @@ export function Calendar({
         ) : (
           <p className="mt-2 text-sm text-muted">Nadie ha reservado este dia.</p>
         )}
+
+        {selectedEvents.length > 0 ? (
+          <ul className="mt-4 space-y-2 border-t border-line pt-3">
+            {selectedEvents.map((event) => (
+              <li key={event.id}>
+                <p className="text-xs font-bold uppercase tracking-wide text-muted">Evento</p>
+                <Link href={`/eventos/${event.id}`} className="font-semibold text-brand hover:underline">
+                  {event.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         {selectedTasks.length > 0 ? (
           <ul className="mt-4 space-y-3 border-t border-line pt-3">

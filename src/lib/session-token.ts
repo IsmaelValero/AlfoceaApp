@@ -1,6 +1,17 @@
 export const SESSION_COOKIE = "alfocea_session";
 
-const SECRET = process.env.ALFOCEA_SESSION_SECRET ?? "alfocea-local-session-v1";
+const LOCAL_FALLBACK = "alfocea-local-session-v1";
+
+function resolveSecret() {
+  const fromEnv = process.env.ALFOCEA_SESSION_SECRET?.trim();
+  if (fromEnv) return fromEnv;
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    throw new Error(
+      "Falta ALFOCEA_SESSION_SECRET en Vercel (Production). Sin ella no se pueden firmar sesiones.",
+    );
+  }
+  return LOCAL_FALLBACK;
+}
 
 function bytesToBase64Url(bytes: Uint8Array) {
   let binary = "";
@@ -29,7 +40,7 @@ function safeEqual(a: string, b: string) {
 async function sign(body: string) {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(SECRET),
+    new TextEncoder().encode(resolveSecret()),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -47,8 +58,8 @@ export async function readSession(token: string | undefined | null): Promise<str
   if (!token) return null;
   const [body, signature] = token.split(".");
   if (!body || !signature) return null;
-  if (!safeEqual(signature, await sign(body))) return null;
   try {
+    if (!safeEqual(signature, await sign(body))) return null;
     const parsed = JSON.parse(base64UrlToText(body)) as { memberId?: string };
     return parsed.memberId || null;
   } catch {

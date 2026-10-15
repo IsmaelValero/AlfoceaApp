@@ -10,7 +10,7 @@ import { loadEventBoard } from "@/lib/queries";
 export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
-  const [board, admin] = await Promise.all([loadEventBoard(), getAdminSession()]);
+  const [board, admin] = await Promise.all([loadEventBoard({ ensurePoll: true }), getAdminSession()]);
 
   if (board.missing) {
     return (

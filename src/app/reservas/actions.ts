@@ -9,7 +9,7 @@ import { text, type FormState } from "@/lib/forms";
 import { DAY_CLOSE, DAY_OPEN, formatHours, isTime } from "@/lib/hours";
 import { overlapsRedBand } from "@/lib/reservation-rules";
 import { findOverlapping, getCurrentMember } from "@/lib/queries";
-import { getAdminSession } from "@/lib/authz";
+import { canMemberWrite, getAdminSession } from "@/lib/authz";
 import {
   RESERVATION_STATUSES,
   RESERVATION_ZONES,
@@ -43,6 +43,8 @@ async function parseForm(
   const guests = Number.parseInt(text(formData, "guests"), 10);
   const status = (text(formData, "status") || "pendiente") as ReservationStatus;
   const notes = text(formData, "notes");
+  const startTime = text(formData, "startTime") || undefined;
+  const endTime = text(formData, "endTime") || undefined;
 
   if (!title) return { error: "Ponle un titulo a la reserva." };
   if (!familyId) return { error: "Elige que familia reserva." };
@@ -52,11 +54,18 @@ async function parseForm(
   if (!DATE_PATTERN.test(endDate)) return { error: "La fecha de fin no es valida." };
   if (endDate < startDate) return { error: "La fecha de fin no puede ser anterior a la de inicio." };
   if (!Number.isFinite(guests) || guests < 1) return { error: "Indica cuantas personas vienen (minimo 1)." };
+  if ((startTime && !endTime) || (!startTime && endTime)) {
+    return { error: "Pon hora de inicio y de fin, o deja las dos vacias para el dia entero." };
+  }
+  if (startTime && endTime) {
+    if (!isTime(startTime) || !isTime(endTime)) return { error: "Revisa las horas." };
+    if (endTime <= startTime) return { error: "La hora de fin tiene que ser posterior a la de inicio." };
+  }
 
   if (!(await db.families.get(familyId))) return { error: "Esa familia ya no existe." };
 
   if (status !== "cancelada") {
-    const conflicts = await findOverlapping(startDate, endDate, zone, excludeId);
+    const conflicts = await findOverlapping(startDate, endDate, zone, excludeId, startTime, endTime);
     if (conflicts.length > 0) {
       const clash = conflicts[0];
       return {
@@ -64,6 +73,12 @@ async function parseForm(
       };
     }
   }
+
+  const redNote =
+    startTime && endTime && startDate === endDate && overlapsRedBand(startDate, startTime, endTime)
+      ? "Franja roja: hace falta autorización del administrador. Revisar las normas de uso."
+      : undefined;
+  const mergedNotes = [notes || undefined, redNote].filter(Boolean).join("\n") || undefined;
 
   return {
     data: {
@@ -73,9 +88,11 @@ async function parseForm(
       zone,
       startDate,
       endDate,
+      startTime,
+      endTime,
       guests,
       status,
-      notes: notes || undefined,
+      notes: mergedNotes,
     },
   };
 }
@@ -83,6 +100,7 @@ async function parseForm(
 export async function requestReservation(_prevState: FormState, formData: FormData): Promise<FormState> {
   const current = await getCurrentMember();
   if (!current) return { error: "No hay un usuario activo para pedir la reserva." };
+  if (!canMemberWrite(current.member)) return { error: "Tu cuenta es de invitados: solo puedes consultar." };
 
   const day = text(formData, "day");
   const startTime = text(formData, "startTime");
@@ -136,7 +154,8 @@ export async function setReservationStatus(formData: FormData) {
 
   const id = text(formData, "id");
   const status = text(formData, "status") as ReservationStatus;
-  const next = text(formData, "next") || `/reservas/${id}`;
+  const nextRaw = text(formData, "next") || `/reservas/${id}`;
+  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : `/reservas/${id}`;
   if (!STATUS_VALUES.includes(status)) return;
 
   await db.reservations.update(id, {
@@ -144,7 +163,7 @@ export async function setReservationStatus(formData: FormData) {
     resolvedAt: status === "pendiente" ? undefined : new Date().toISOString(),
   });
   refresh(id);
-  redirect(next.startsWith("/") ? next : `/reservas/${id}`);
+  redirect(next);
 }
 
 export async function createReservation(_prevState: FormState, formData: FormData): Promise<FormState> {

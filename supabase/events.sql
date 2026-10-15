@@ -24,7 +24,7 @@ create table if not exists public.poll_votes (
   poll_id text not null references public.polls (id) on delete cascade,
   option_id text not null references public.poll_options (id) on delete cascade,
   family_id text not null references public.families (id) on delete cascade,
-  member_id text not null references public.members (id) on delete cascade,
+  member_id text references public.members (id) on delete set null,
   people_count integer not null check (people_count >= 1),
   created_at timestamptz not null default now(),
   unique (poll_id, family_id)
@@ -48,7 +48,7 @@ create table if not exists public.event_rsvps (
   id text primary key,
   event_id text not null references public.events (id) on delete cascade,
   family_id text not null references public.families (id) on delete cascade,
-  member_id text not null references public.members (id) on delete cascade,
+  member_id text references public.members (id) on delete set null,
   status text not null check (status in ('voy', 'no_voy', 'duda')),
   people_count integer not null check (people_count >= 0),
   created_at timestamptz not null default now(),
@@ -67,9 +67,9 @@ create table if not exists public.event_items (
 create index if not exists poll_options_poll_idx on public.poll_options (poll_id, sort_order);
 create index if not exists events_dates_idx on public.events (start_date, end_date);
 
-alter table public.polls disable row level security;
-alter table public.poll_options disable row level security;
-alter table public.poll_votes disable row level security;
-alter table public.events disable row level security;
-alter table public.event_rsvps disable row level security;
-alter table public.event_items disable row level security;
+alter table public.polls enable row level security;
+alter table public.poll_options enable row level security;
+alter table public.poll_votes enable row level security;
+alter table public.events enable row level security;
+alter table public.event_rsvps enable row level security;
+alter table public.event_items enable row level security;

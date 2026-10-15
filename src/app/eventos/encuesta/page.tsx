@@ -13,7 +13,11 @@ import { closePoll, votePoll } from "../actions";
 export const dynamic = "force-dynamic";
 
 export default async function PollPage() {
-  const [board, current, admin] = await Promise.all([loadEventBoard(), getCurrentMember(), getAdminSession()]);
+  const [board, current, admin] = await Promise.all([
+    loadEventBoard({ ensurePoll: true }),
+    getCurrentMember(),
+    getAdminSession(),
+  ]);
   if (board.missing) {
     return (
       <main className="screen">

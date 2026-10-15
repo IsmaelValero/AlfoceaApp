@@ -145,6 +145,34 @@ export function ReservationForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
+          <label className="field-label" htmlFor="startTime">
+            Desde (hora) <span className="font-normal">opcional</span>
+          </label>
+          <input
+            id="startTime"
+            name="startTime"
+            type="time"
+            className="field"
+            defaultValue={reservation?.startTime ?? ""}
+          />
+        </div>
+        <div>
+          <label className="field-label" htmlFor="endTime">
+            Hasta (hora) <span className="font-normal">opcional</span>
+          </label>
+          <input
+            id="endTime"
+            name="endTime"
+            type="time"
+            className="field"
+            defaultValue={reservation?.endTime ?? ""}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-muted">Si dejas las horas vacias, la reserva ocupa el dia entero.</p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
           <label className="field-label" htmlFor="guests">
             Personas
           </label>

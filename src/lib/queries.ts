@@ -273,13 +273,44 @@ const EMPTY_WORK: WorkData = {
   manuals: [],
 };
 
+async function listRecentCompletions(): Promise<RecurringCompletion[]> {
+  const since = addDays(todayKey(), -120);
+  try {
+    const { getSupabase, hasSupabaseEnv } = await import("@/lib/supabase");
+    if (hasSupabaseEnv()) {
+      const { data, error } = await getSupabase()
+        .from("recurring_completions")
+        .select("id, task_id, date, member_id, completed_at")
+        .gte("date", since)
+        .order("date", { ascending: false })
+        .limit(800);
+      if (error) throw error;
+      return (data ?? []).map((row) => ({
+        id: String(row.id),
+        taskId: String(row.task_id),
+        date: String(row.date).slice(0, 10),
+        memberId: row.member_id ? String(row.member_id) : undefined,
+        completedAt: String(row.completed_at),
+      }));
+    }
+  } catch (error) {
+    if (!isMissingWorkTable(error)) {
+      // Si falla el filtro, caemos al listado general abajo.
+    } else {
+      throw error;
+    }
+  }
+  const all = await db.recurringCompletions.list();
+  return all.filter((item) => item.date >= since);
+}
+
 export async function loadWorkData(): Promise<WorkData> {
   try {
     const [projects, tasks, recurring, completions, members, manuals] = await Promise.all([
       db.projects.list(),
       db.projectTasks.list(),
       db.recurringTasks.list(),
-      db.recurringCompletions.list(),
+      listRecentCompletions(),
       db.members.list(),
       db.manuals.list(),
     ]);
@@ -356,8 +387,33 @@ function isUniqueViolation(error: unknown) {
   return record.code === "23505";
 }
 
-async function ensureCurrentPoll(polls: Poll[], month: string) {
-  if (polls.some((poll) => poll.month === month)) return polls;
+/** Cierra encuestas abiertas de meses anteriores. No crea nada. */
+async function closeStalePolls(polls: Poll[], month: string) {
+  await Promise.all(
+    polls
+      .filter((poll) => poll.status === "abierta" && poll.month < month)
+      .map((poll) => db.polls.update(poll.id, { status: "cerrada" })),
+  );
+}
+
+/**
+ * Abre la encuesta del mes actual si no existe.
+ * Solo debe llamarse desde Eventos / Encuesta, no desde Inicio.
+ */
+export async function ensureCurrentMonthPoll() {
+  const today = todayKey();
+  const month = currentMonthKey(today);
+  const listed = await db.polls.list();
+  await closeStalePolls(listed, month);
+  if (listed.some((poll) => poll.month === month)) {
+    return listed.find((poll) => poll.month === month)!;
+  }
+
+  const choices = weekendChoices(month, today);
+  if (choices.length === 0) {
+    throw new Error("Ya no quedan sábados ni domingos este mes para la encuesta.");
+  }
+
   try {
     const poll = await db.polls.create({
       month,
@@ -366,7 +422,7 @@ async function ensureCurrentPoll(polls: Poll[], month: string) {
       createdAt: new Date().toISOString(),
     });
     await Promise.all(
-      weekendChoices(month).map((choice, index) =>
+      choices.map((choice, index) =>
         db.pollOptions.create({
           pollId: poll.id,
           label: choice.label,
@@ -376,19 +432,27 @@ async function ensureCurrentPoll(polls: Poll[], month: string) {
         }),
       ),
     );
-    return [...polls, poll];
+    return poll;
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
-    return db.polls.list();
+    const again = await db.polls.list();
+    const existing = again.find((poll) => poll.month === month);
+    if (!existing) throw error;
+    return existing;
   }
 }
 
-export async function loadEventBoard(): Promise<EventBoard> {
+export async function loadEventBoard(options?: { ensurePoll?: boolean }): Promise<EventBoard> {
   const month = currentMonthKey(todayKey());
   try {
-    const listed = await db.polls.list();
-    const polls = await ensureCurrentPoll(listed, month);
-    const [options, votes, events, rsvps, items, families, members] = await Promise.all([
+    let polls = await db.polls.list();
+    await closeStalePolls(polls, month);
+    polls = await db.polls.list();
+    if (options?.ensurePoll) {
+      await ensureCurrentMonthPoll();
+      polls = await db.polls.list();
+    }
+    const [pollOptions, votes, events, rsvps, items, families, members] = await Promise.all([
       db.pollOptions.list(),
       db.pollVotes.list(),
       db.events.list(),
@@ -397,7 +461,18 @@ export async function loadEventBoard(): Promise<EventBoard> {
       db.families.list(),
       db.members.list(),
     ]);
-    return { missing: false, month, polls, options, votes, events, rsvps, items, families, members };
+    return {
+      missing: false,
+      month,
+      polls,
+      options: pollOptions,
+      votes,
+      events,
+      rsvps,
+      items,
+      families,
+      members,
+    };
   } catch (error) {
     if (isMissingEventTable(error)) return { ...EMPTY_EVENTS, month };
     throw error;

@@ -7,6 +7,16 @@ export const MARK_COOKIE = "alfocea_mark";
 /** Si vale "user", un admin real usa la app como usuario normal. */
 export const VIEW_MODE_COOKIE = "alfocea_view";
 
+function cookieBase() {
+  return {
+    httpOnly: true as const,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: ONE_YEAR,
+    secure: process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL),
+  };
+}
+
 export async function getSessionMemberId() {
   const jar = await cookies();
   return readSession(jar.get(SESSION_COOKIE)?.value);
@@ -20,12 +30,7 @@ export async function isViewingAsUser() {
 export async function setViewAsUser(enabled: boolean) {
   const jar = await cookies();
   if (enabled) {
-    jar.set(VIEW_MODE_COOKIE, "user", {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: ONE_YEAR,
-    });
+    jar.set(VIEW_MODE_COOKIE, "user", cookieBase());
   } else {
     jar.delete(VIEW_MODE_COOKIE);
   }
@@ -33,20 +38,13 @@ export async function setViewAsUser(enabled: boolean) {
 
 export async function setSessionCookie(memberId: string, mark?: string) {
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, await signSession(memberId), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: ONE_YEAR,
-  });
+  jar.set(SESSION_COOKIE, await signSession(memberId), cookieBase());
   // Al iniciar sesion, siempre modo admin real (si aplica).
   jar.delete(VIEW_MODE_COOKIE);
   if (mark) {
     jar.set(MARK_COOKIE, mark.slice(0, 1).toUpperCase(), {
+      ...cookieBase(),
       httpOnly: false,
-      sameSite: "lax",
-      path: "/",
-      maxAge: ONE_YEAR,
     });
   }
 }

@@ -81,25 +81,19 @@ create index if not exists members_family_id_idx on public.members (family_id);
 create index if not exists reservations_dates_idx on public.reservations (start_date, end_date);
 create index if not exists reservations_family_id_idx on public.reservations (family_id);
 
--- La app usa la service role key en el servidor; RLS queda desactivado
--- porque la autorizacion la hace Next.js (sesion propia + rol admin).
-alter table public.families disable row level security;
-alter table public.members disable row level security;
-alter table public.accounts disable row level security;
-alter table public.reservations disable row level security;
-alter table public.manuals disable row level security;
-alter table public.rules disable row level security;
+-- RLS: activado y sin politicas para anon/authenticated.
+-- La app usa la service role (bypass RLS). No re-ejecutes el seed abajo en produccion.
+alter table public.families enable row level security;
+alter table public.members enable row level security;
+alter table public.accounts enable row level security;
+alter table public.reservations enable row level security;
+alter table public.manuals enable row level security;
+alter table public.rules enable row level security;
 
--- ------------------------------ Seed -----------------------------------------
--- Contraseña inicial de todas las cuentas: alfocea123
--- (marcador $bootstrap$…; al primer login la app lo sustituye por un hash scrypt)
-
-truncate table public.accounts cascade;
-truncate table public.reservations cascade;
-truncate table public.manuals cascade;
-truncate table public.rules cascade;
-truncate table public.members cascade;
-truncate table public.families cascade;
+-- ------------------------------ Seed (solo instalacion nueva) ----------------
+-- Contraseña inicial: alfocea123 (marcador $bootstrap$…; al primer login se hashea).
+-- NO hace TRUNCATE. Si las filas ya existen, se ignoran (on conflict do nothing).
+-- NUNCA vuelvas a lanzar un truncate en produccion.
 
 insert into public.families (id, name, color, notes) values
   ('fam-rendon-fau', 'Familia Rendon Fau', '#2F6B4F', null),
@@ -111,7 +105,8 @@ insert into public.families (id, name, color, notes) values
   ('fam-fau-garcia', 'Familia Fau Garcia', '#3F8F8A', null),
   ('fam-garcia-jimenez', 'Familia Garcia Jimenez', '#6B7A72', null),
   ('fam-casbas-rubio', 'Familia Casbas Rubio', '#2F6B4F', null),
-  ('fam-guallar-ortin', 'Familia Guallar Ortin', '#C2703D', null);
+  ('fam-guallar-ortin', 'Familia Guallar Ortin', '#C2703D', null)
+on conflict (id) do nothing;
 
 insert into public.members (id, family_id, name, role, email) values
   -- Rendon Fau
@@ -153,7 +148,8 @@ insert into public.members (id, family_id, name, role, email) values
   ('mem-luis', 'fam-casbas-rubio', 'Luis', 'adulto', 'luis@alfocea.es'),
   -- Guallar Ortin
   ('mem-pablo', 'fam-guallar-ortin', 'Pablo', 'adulto', 'pablo@alfocea.es'),
-  ('mem-laura-guallar', 'fam-guallar-ortin', 'Laura', 'adulto', 'laura.guallar@alfocea.es');
+  ('mem-laura-guallar', 'fam-guallar-ortin', 'Laura', 'adulto', 'laura.guallar@alfocea.es')
+on conflict (id) do nothing;
 
 insert into public.accounts (member_id, username, email, password_hash) values
   ('mem-miguel-rendon', 'miguel.rendon', 'miguel.rendon@alfocea.es', '$bootstrap$alfocea123'),
@@ -185,4 +181,5 @@ insert into public.accounts (member_id, username, email, password_hash) values
   ('mem-isabel', 'isabel', 'isabel@alfocea.es', '$bootstrap$alfocea123'),
   ('mem-luis', 'luis', 'luis@alfocea.es', '$bootstrap$alfocea123'),
   ('mem-pablo', 'pablo', 'pablo@alfocea.es', '$bootstrap$alfocea123'),
-  ('mem-laura-guallar', 'laura.guallar', 'laura.guallar@alfocea.es', '$bootstrap$alfocea123');
+  ('mem-laura-guallar', 'laura.guallar', 'laura.guallar@alfocea.es', '$bootstrap$alfocea123')
+on conflict (member_id) do nothing;

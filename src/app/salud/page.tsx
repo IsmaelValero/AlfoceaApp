@@ -1,34 +1,16 @@
-import { getSupabase, getSupabaseConfig, hasSupabaseEnv } from "@/lib/supabase";
+import { redirect } from "next/navigation";
+
+import { getAdminSession } from "@/lib/authz";
+import { buildDiagnostics } from "@/lib/diagnostics";
 
 export const dynamic = "force-dynamic";
 
-/** Diagnostico publico de conexion (sin secretos). No requiere login. */
+/** Diagnostico de conexion. Solo administradores. */
 export default async function SaludPage() {
-  const result: Record<string, unknown> = {
-    hasEnv: hasSupabaseEnv(),
-    vercel: Boolean(process.env.VERCEL),
-    nodeEnv: process.env.NODE_ENV,
-  };
+  const admin = await getAdminSession();
+  if (!admin) redirect("/");
 
-  try {
-    const { url, key } = getSupabaseConfig();
-    result.url = url;
-    result.keyPrefix = `${key.slice(0, 6)}...`;
-    result.keyLength = key.length;
-
-    const { data, error } = await getSupabase().from("families").select("id,name").limit(1);
-    if (error) {
-      result.db = "error";
-      result.dbMessage = error.message;
-      result.dbCode = error.code;
-    } else {
-      result.db = "ok";
-      result.familiesSample = data?.length ?? 0;
-    }
-  } catch (error) {
-    result.configError = error instanceof Error ? error.message : String(error);
-  }
-
+  const result = await buildDiagnostics();
   const ok = result.db === "ok";
 
   return (

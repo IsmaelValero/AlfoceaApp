@@ -13,7 +13,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const current = await getCurrentMember();
-  if (!current) redirect("/login");
+  // /api/logout limpia cookies firmadas huérfanas (válidas en middleware pero sin miembro).
+  if (!current) redirect("/api/logout");
 
   const initial = current.member.name.slice(0, 1).toUpperCase();
   const fullName = [current.member.name, current.member.lastName].filter(Boolean).join(" ");

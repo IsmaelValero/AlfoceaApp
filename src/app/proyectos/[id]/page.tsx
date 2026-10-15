@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { Badge, BUTTON_STYLES, EmptyState, PageHeader } from "@/components/ui";
-import { getAdminSession } from "@/lib/authz";
-import { loadWorkData } from "@/lib/queries";
+import { canMemberWrite, getAdminSession } from "@/lib/authz";
+import { getCurrentMember, loadWorkData } from "@/lib/queries";
 import { PROJECT_TASK_STATUSES, type ProjectTaskStatus } from "@/lib/types";
 
 import { deleteProject, deleteProjectTask, setProjectTaskStatus } from "../actions";
@@ -23,7 +23,7 @@ function statusLabel(status: ProjectTaskStatus) {
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [work, admin] = await Promise.all([loadWorkData(), getAdminSession()]);
+  const [work, admin, current] = await Promise.all([loadWorkData(), getAdminSession(), getCurrentMember()]);
   const project = work.projects.find((item) => item.id === id);
   if (!project) {
     if (work.missing) notFound();
@@ -35,6 +35,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     const member = work.members.find((item) => item.id === memberId);
     return member ? [member.name, member.lastName].filter(Boolean).join(" ") : "Alguien";
   };
+  const canWrite = Boolean(current && canMemberWrite(current.member));
 
   return (
     <main className="screen">
@@ -56,20 +57,22 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         <EmptyState title="Este proyecto no tiene tareas" />
       ) : (
         <ul className="space-y-2.5">
-          {tasks.map((task) => (
-            <li key={task.id} className="card px-4 py-3.5">
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-semibold text-ink">{task.title}</p>
-                <Badge tone={STATUS_TONE[task.status]}>{statusLabel(task.status)}</Badge>
-              </div>
-              {task.description ? <p className="mt-1 text-sm text-muted">{task.description}</p> : null}
-              <p className="mt-2 text-xs text-muted">
-                {task.assigneeIds.map(memberName).join(", ") || "Sin asignar"}
-                {task.zone ? ` · ${task.zone}` : ""}
-              </p>
-              {admin ? (
-                <div className="mt-3 space-y-2">
-                  <form action={setProjectTaskStatus} className="flex gap-2">
+          {tasks.map((task) => {
+            const assignedToMe = Boolean(current && task.assigneeIds.includes(current.member.id));
+            const canSetStatus = Boolean(admin || (canWrite && assignedToMe));
+            return (
+              <li key={task.id} className="card px-4 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-semibold text-ink">{task.title}</p>
+                  <Badge tone={STATUS_TONE[task.status]}>{statusLabel(task.status)}</Badge>
+                </div>
+                {task.description ? <p className="mt-1 text-sm text-muted">{task.description}</p> : null}
+                <p className="mt-2 text-xs text-muted">
+                  {task.assigneeIds.map(memberName).join(", ") || "Sin asignar"}
+                  {task.zone ? ` · ${task.zone}` : ""}
+                </p>
+                {canSetStatus ? (
+                  <form action={setProjectTaskStatus} className="mt-3 flex gap-2">
                     <input type="hidden" name="id" value={task.id} />
                     <input type="hidden" name="projectId" value={project.id} />
                     <select name="status" defaultValue={task.status} className="field py-2">
@@ -83,7 +86,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                       Guardar
                     </button>
                   </form>
-                  <div className="flex gap-2">
+                ) : null}
+                {admin ? (
+                  <div className="mt-3 flex gap-2">
                     <Link href={`/proyectos/${project.id}/tareas/${task.id}/editar`} className={`${BUTTON_STYLES.secondary} flex-1`}>
                       Editar
                     </Link>
@@ -93,10 +98,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                       <ConfirmSubmit message="¿Eliminar esta tarea?">Eliminar</ConfirmSubmit>
                     </form>
                   </div>
-                </div>
-              ) : null}
-            </li>
-          ))}
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       )}
 

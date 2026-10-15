@@ -4,7 +4,7 @@ import { ReservationCard } from "@/components/ReservationCard";
 import { ModuleTitle } from "@/components/ui";
 import { getAdminSession } from "@/lib/authz";
 import { todayKey } from "@/lib/dates";
-import { getCurrentMember, listReservations, loadWorkData, type ReservationView } from "@/lib/queries";
+import { getCurrentMember, listReservations, loadEventBoard, loadWorkData, type ReservationView } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -16,16 +16,27 @@ export default async function ReservationsPage({
   searchParams: Promise<{ dia?: string }>;
 }) {
   const { dia } = await searchParams;
-  const [reservations, current, admin, work] = await Promise.all([
+  const [reservations, current, admin, work, events] = await Promise.all([
     listReservations(),
     getCurrentMember(),
     getAdminSession(),
     loadWorkData(),
+    loadEventBoard(),
   ]);
   const today = todayKey();
   const initialDay = dia && DATE_PATTERN.test(dia) ? dia : today;
   const mine = current ? ownUpcoming(reservations, current.member.id, today) : [];
   const pending = admin ? reservations.filter((r) => r.status === "pendiente") : [];
+  const upcomingEvents = events.missing
+    ? []
+    : events.events
+        .filter((event) => event.endDate >= today)
+        .map((event) => ({
+          id: event.id,
+          title: event.title,
+          startDate: event.startDate,
+          endDate: event.endDate,
+        }));
 
   return (
     <main className="screen">
@@ -42,6 +53,7 @@ export default async function ReservationsPage({
           date: completion.date,
           memberName: work.members.find((member) => member.id === completion.memberId)?.name,
         }))}
+        events={upcomingEvents}
       />
 
       {pending.length > 0 ? (

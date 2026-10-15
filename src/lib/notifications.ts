@@ -5,19 +5,25 @@ export function isDecisionNotification(reservation: ReservationView) {
   return reservation.status === "confirmada" || reservation.status === "cancelada";
 }
 
+const DECISION_WINDOW_MS = 1000 * 60 * 60 * 24 * 45;
+
 export function visibleDecisionNotifications(
   reservations: ReservationView[],
   memberId: string,
   dismissedIds: string[],
 ) {
   const dismissed = new Set(dismissedIds);
+  const cutoff = Date.now() - DECISION_WINDOW_MS;
   return reservations
-    .filter(
-      (reservation) =>
-        reservation.memberId === memberId &&
-        isDecisionNotification(reservation) &&
-        !dismissed.has(reservation.id),
-    )
+    .filter((reservation) => {
+      if (reservation.memberId !== memberId) return false;
+      if (!isDecisionNotification(reservation)) return false;
+      if (dismissed.has(reservation.id)) return false;
+      const stamp = reservation.resolvedAt ?? reservation.createdAt;
+      const time = Date.parse(stamp);
+      if (Number.isFinite(time) && time < cutoff) return false;
+      return true;
+    })
     .sort((a, b) => (b.resolvedAt ?? b.createdAt).localeCompare(a.resolvedAt ?? a.createdAt));
 }
 

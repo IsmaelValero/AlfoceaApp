@@ -600,7 +600,7 @@ function mapPollVote(row: Record<string, unknown>): PollVote {
     pollId: String(row.poll_id),
     optionId: String(row.option_id),
     familyId: String(row.family_id),
-    memberId: String(row.member_id),
+    memberId: row.member_id ? String(row.member_id) : undefined,
     peopleCount: Number(row.people_count),
     createdAt: String(row.created_at),
   };
@@ -626,7 +626,7 @@ function mapEventRsvp(row: Record<string, unknown>): EventRsvp {
     id: String(row.id),
     eventId: String(row.event_id),
     familyId: String(row.family_id),
-    memberId: String(row.member_id),
+    memberId: row.member_id ? String(row.member_id) : undefined,
     status: row.status as EventRsvp["status"],
     peopleCount: Number(row.people_count),
     createdAt: String(row.created_at),

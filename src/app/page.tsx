@@ -132,6 +132,27 @@ export default async function HomePage() {
               </ul>
             </section>
           ) : null}
+
+          {home.pinnedRules.length > 0 ? (
+            <section className="mb-5">
+              <div className="mb-2 flex items-baseline justify-between gap-2">
+                <h2 className="section-title">Normas destacadas</h2>
+                <Link href="/normas" className="text-xs font-semibold text-brand hover:underline">
+                  Ver todas
+                </Link>
+              </div>
+              <ul className="space-y-2">
+                {home.pinnedRules.map((rule) => (
+                  <li key={rule.id}>
+                    <Link href={`/normas/${rule.id}`} className="card block px-4 py-3.5">
+                      <p className="font-semibold text-ink">{rule.title}</p>
+                      <p className="mt-0.5 line-clamp-2 text-sm text-muted">{rule.content}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
 
         <div>

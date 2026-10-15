@@ -42,7 +42,10 @@ export function ReservationCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <p className="truncate font-semibold text-ink">{reservation.title}</p>
-            <Badge tone={STATUS_TONE[reservation.status]}>{STATUS_LABEL[reservation.status]}</Badge>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <Badge tone={STATUS_TONE[reservation.status]}>{STATUS_LABEL[reservation.status]}</Badge>
+              {reservation.notes?.includes("Franja roja") ? <Badge tone="warn">Franja roja</Badge> : null}
+            </div>
           </div>
 
           <p className="mt-0.5 truncate text-sm text-muted">
