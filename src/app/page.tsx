@@ -7,17 +7,19 @@ import { TopBar } from "@/components/TopBar";
 import { WeekStrip } from "@/components/WeekStrip";
 import { Badge, BUTTON_STYLES } from "@/components/ui";
 import { formatDayMonth, formatRange, relativeLabel } from "@/lib/dates";
-import { getCurrentMember, getHomeData, listReservations, listWeekTasks } from "@/lib/queries";
+import { monthName } from "@/lib/events";
+import { getCurrentMember, getHomeData, listReservations, listWeekTasks, loadEventNotices } from "@/lib/queries";
 
 // Los datos viven en disco y cambian al usar la app: nada de cache estatica.
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [home, current, reservations, weekTasks] = await Promise.all([
+  const current = await getCurrentMember();
+  const [home, reservations, weekTasks, events] = await Promise.all([
     getHomeData(),
-    getCurrentMember(),
     listReservations(),
     listWeekTasks(),
+    loadEventNotices(current?.family.id),
   ]);
   const { stats } = home;
 
@@ -62,6 +64,30 @@ export default async function HomePage() {
               <Stat label="Personas" value={stats.peopleThisWeek} />
             </dl>
           </section>
+
+          {!events.missing && (events.pollOpen || events.pending.length > 0) ? (
+            <section className="mb-5">
+              <h2 className="section-title mb-2">Eventos</h2>
+              <div className="space-y-2.5">
+                {events.pollOpen ? (
+                  <Link href="/eventos/encuesta" className="card block px-4 py-3.5">
+                    <p className="font-semibold text-ink">Encuesta de {monthName(events.month)}</p>
+                    <p className="mt-0.5 text-sm text-muted">Elige el finde de los cumpleaños. Un voto por familia.</p>
+                  </Link>
+                ) : null}
+                {current
+                  ? events.pending
+                      .filter((event) => event.endDate >= home.today)
+                      .map((event) => (
+                        <Link key={event.id} href={`/eventos/${event.id}`} className="card block px-4 py-3.5">
+                          <p className="font-semibold text-ink">{event.title}</p>
+                          <p className="mt-0.5 text-sm text-muted">Falta confirmar si venís.</p>
+                        </Link>
+                      ))
+                  : null}
+              </div>
+            </section>
+          ) : null}
 
           {weekTasks.length > 0 ? (
             <section className="mb-5">

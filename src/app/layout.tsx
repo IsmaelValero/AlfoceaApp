@@ -9,7 +9,6 @@ export const metadata: Metadata = {
   title: "Alfocea",
   description: "Mini CRM familiar para gestionar el terreno: reservas, manuales, normas y familias.",
   applicationName: "Alfocea",
-  manifest: "/manifest.webmanifest",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -35,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var t=localStorage.getItem('alfocea-theme');var m=document.querySelector('meta[name=\"theme-color\"]');if(t==='anochecer'){document.documentElement.dataset.theme='anochecer';if(m)m.setAttribute('content','#7899A8')}else{document.documentElement.removeAttribute('data-theme');if(m)m.setAttribute('content','#6F8F7B')}}catch(e){}",
+              "try{var t=localStorage.getItem('alfocea-theme');var m=document.querySelector('meta[name=\"theme-color\"]');if(t==='oscuro'||t==='anochecer'){document.documentElement.dataset.theme='oscuro';if(m)m.setAttribute('content','#121614')}else{document.documentElement.removeAttribute('data-theme');if(m)m.setAttribute('content','#6F8F7B')}}catch(e){}",
           }}
         />
         <Suspense fallback={null}>

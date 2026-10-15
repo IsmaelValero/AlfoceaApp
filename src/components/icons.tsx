@@ -110,6 +110,19 @@ export function HomeIcon(props: IconProps) {
   );
 }
 
+export function PartyIcon(props: IconProps) {
+  return (
+    <Mark {...props}>
+      <path d="M9.2 26.2 16 7.4l6.8 18.8H9.2z" fill={NAVY} />
+      <path d="M12.2 20.4h7.6" stroke={SEA} strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="16" cy="6.2" r="2.1" fill={SAND} />
+      <circle cx="8.2" cy="12.4" r="1.35" fill={SEA} />
+      <circle cx="23.6" cy="11.2" r="1.2" fill={SAND} />
+      <circle cx="22.4" cy="16.6" r="1.15" fill={SEA} />
+    </Mark>
+  );
+}
+
 export function PlusIcon(props: IconProps) {
   return (
     <Mark {...props}>

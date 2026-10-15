@@ -53,6 +53,8 @@ function FabGlyph({ icon }: { icon: Exclude<FabIcon, "initial"> }) {
       return <BoxGlyph />;
     case "tasks":
       return <TasksGlyph />;
+    case "party":
+      return <PartyGlyph />;
   }
 }
 
@@ -132,6 +134,16 @@ function BoxGlyph() {
     <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
       <path d="M12 3.2 20.5 7.5v9L12 20.8 3.5 16.5v-9L12 3.2z" fill="currentColor" />
       <path d="M12 11.5 20.5 7.5 12 3.2 3.5 7.5l8.5 4z" fill="var(--color-secondary)" />
+    </svg>
+  );
+}
+
+function PartyGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+      <path d="M7 20.5 12 4.8l5 15.7H7z" fill="currentColor" />
+      <path d="M9.2 15.6h5.6" stroke="var(--color-secondary)" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="4.2" r="1.5" fill="var(--color-secondary)" />
     </svg>
   );
 }

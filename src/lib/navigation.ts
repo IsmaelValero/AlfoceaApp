@@ -1,6 +1,6 @@
-const MODULE_ROOTS = new Set(["/reservas", "/manuales", "/normas", "/familias", "/proyectos", "/inventario"]);
+const MODULE_ROOTS = new Set(["/reservas", "/manuales", "/normas", "/familias", "/proyectos", "/eventos", "/inventario"]);
 
-export type FabIcon = "home" | "widgets" | "book" | "calendar" | "shield" | "users" | "box" | "tasks" | "initial";
+export type FabIcon = "home" | "widgets" | "book" | "calendar" | "shield" | "users" | "box" | "tasks" | "party" | "initial";
 
 export interface FloatingNavConfig {
   href: string;
@@ -34,6 +34,9 @@ export function parentHref(pathname: string, search = ""): string | null {
   const projectEdit = pathname.match(/^\/proyectos\/([^/]+)\/editar$/);
   if (projectEdit) return `/proyectos/${projectEdit[1]}`;
   if (/^\/proyectos\/[^/]+$/.test(pathname)) return "/proyectos";
+
+  if (pathname === "/eventos/nuevo" || pathname === "/eventos/encuesta") return "/eventos";
+  if (/^\/eventos\/[^/]+$/.test(pathname)) return "/eventos";
 
   const edit = pathname.match(/^\/(reservas|manuales|normas|familias)\/([^/]+)\/editar$/);
   if (edit) return `/${edit[1]}/${edit[2]}`;
@@ -87,6 +90,9 @@ export function floatingNavFor(pathname: string): FloatingNavConfig | null {
   }
   if (/^\/proyectos\/periodicas\/[^/]+$/.test(pathname) || /^\/proyectos\/[^/]+$/.test(pathname)) {
     return { href: "/proyectos", icon: "tasks", label: "Volver a Proyectos" };
+  }
+  if (pathname === "/eventos/encuesta" || /^\/eventos\/[^/]+$/.test(pathname)) {
+    return { href: "/eventos", icon: "party", label: "Volver a Eventos" };
   }
 
   return null;

@@ -328,51 +328,54 @@
   }
 }
 
-/* Estilo Anochecer: azul niebla + melocoton. */
-html[data-theme="anochecer"] {
-  --color-canvas: #f7f8f6;
-  --color-surface: #ffffff;
-  --color-ink: #38454a;
-  --color-muted: #6a787e;
-  --color-line: #e1e6e7;
-  --color-sand: #e8eeef;
-  --color-brand: #7899a8;
-  --color-brand-dark: #38454a;
-  --color-brand-soft: #e6eef1;
-  --color-secondary: #b8cbd2;
-  --color-contrast: #7899a8;
-  --color-accent: #d9a887;
-  --color-accent-soft: #f6eee6;
-  --color-warn: #b48a4a;
-  --color-warn-soft: #f6eedf;
-  --color-danger: #b23b3b;
-  --color-danger-soft: #fbeaea;
-  color-scheme: light;
+/* Oscuro: dark mode tipico, con el salvia del logo. */
+html[data-theme="oscuro"] {
+  --color-canvas: #121614;
+  --color-surface: #1c221f;
+  --color-ink: #e8ece9;
+  --color-muted: #9aa39c;
+  --color-line: #2d3531;
+  --color-sand: #252c28;
+  --color-brand: #8fad9a;
+  --color-brand-dark: #c5d6cb;
+  --color-brand-soft: #243028;
+  --color-secondary: #6f8f7b;
+  --color-contrast: #8fad9a;
+  --color-accent: #d6a66b;
+  --color-accent-soft: #3a2f22;
+  --color-warn: #d6a66b;
+  --color-warn-soft: #3a2f22;
+  --color-danger: #e07070;
+  --color-danger-soft: #3a1f1f;
+  color-scheme: dark;
 }
 
-html[data-theme="anochecer"] body {
-  background-color: #f7f8f6;
+html[data-theme="oscuro"] body {
+  background-color: #121614;
 }
 
-html[data-theme="anochecer"] .app-stage {
-  background-color: #d5e0e3;
-  background-image:
-    radial-gradient(circle at 18% 0%, #ffffff, transparent 42%);
-  background-size: auto;
+html[data-theme="oscuro"] .app-stage {
+  background-color: #0c100e;
+  background-image: none;
 }
 
-html[data-theme="anochecer"] .phone {
-  background-color: #eef3f4;
-  background-image:
-    radial-gradient(90% 55% at 100% -8%, rgb(120 153 168 / 0.28), transparent 58%),
-    radial-gradient(80% 45% at -12% 108%, rgb(217 168 135 / 0.32), transparent 52%);
-  background-size: auto;
-  border-color: #38454a;
+html[data-theme="oscuro"] .phone {
+  background-color: #121614;
+  background-image: none;
+  border-color: #2d3531;
 }
 
-html[data-theme="anochecer"] .field:focus {
+html[data-theme="oscuro"] .card {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+html[data-theme="oscuro"] .field:focus {
   border-color: var(--color-contrast);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-contrast) 22%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-contrast) 28%, transparent);
+}
+
+html[data-theme="oscuro"] .boot-screen {
+  background: #0c100e;
 }
 
 @layer components {

@@ -3,27 +3,27 @@
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "alfocea-theme";
-type Theme = "anochecer" | "amanecer";
+type Theme = "amanecer" | "oscuro";
 
 const OPTIONS: { id: Theme; label: string; swatches: [string, string, string] }[] = [
   { id: "amanecer", label: "Amanecer", swatches: ["#6F8F7B", "#AFC2B4", "#D6A66B"] },
-  { id: "anochecer", label: "Anochecer", swatches: ["#7899A8", "#B8CBD2", "#D9A887"] },
+  { id: "oscuro", label: "Oscuro", swatches: ["#121614", "#8FAD9A", "#D6A66B"] },
 ];
 
 function applyTheme(theme: Theme) {
-  if (theme === "anochecer") document.documentElement.dataset.theme = "anochecer";
+  if (theme === "oscuro") document.documentElement.dataset.theme = "oscuro";
   else delete document.documentElement.dataset.theme;
   localStorage.setItem(STORAGE_KEY, theme);
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", theme === "anochecer" ? "#7899A8" : "#6F8F7B");
+    ?.setAttribute("content", theme === "oscuro" ? "#121614" : "#6F8F7B");
 }
 
 export function AppearanceSetting() {
   const [theme, setTheme] = useState<Theme>("amanecer");
 
   useEffect(() => {
-    setTheme(document.documentElement.dataset.theme === "anochecer" ? "anochecer" : "amanecer");
+    setTheme(document.documentElement.dataset.theme === "oscuro" ? "oscuro" : "amanecer");
   }, []);
 
   function choose(next: Theme) {

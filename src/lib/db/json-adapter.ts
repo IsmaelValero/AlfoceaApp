@@ -6,9 +6,15 @@ import type { Collection, DataAdapter } from "@/lib/db/adapter";
 import { seedFamilies, seedManuals, seedMembers, seedReservations, seedRules } from "@/lib/db/seed";
 import type {
   Entity,
+  EventItem,
+  EventRsvp,
   Family,
+  FamilyEvent,
   Manual,
   Member,
+  Poll,
+  PollOption,
+  PollVote,
   Project,
   ProjectTask,
   RecurringCompletion,
@@ -129,5 +135,11 @@ export function createJsonAdapter(): DataAdapter {
     projectTasks: new JsonCollection<ProjectTask>("project-tasks", () => []),
     recurringTasks: new JsonCollection<RecurringTask>("recurring-tasks", () => []),
     recurringCompletions: new JsonCollection<RecurringCompletion>("recurring-completions", () => []),
+    polls: new JsonCollection<Poll>("polls", () => []),
+    pollOptions: new JsonCollection<PollOption>("poll-options", () => []),
+    pollVotes: new JsonCollection<PollVote>("poll-votes", () => []),
+    events: new JsonCollection<FamilyEvent>("events", () => []),
+    eventRsvps: new JsonCollection<EventRsvp>("event-rsvps", () => []),
+    eventItems: new JsonCollection<EventItem>("event-items", () => []),
   };
 }

@@ -1,8 +1,14 @@
 import type {
   Entity,
+  EventItem,
+  EventRsvp,
   Family,
+  FamilyEvent,
   Manual,
   Member,
+  Poll,
+  PollOption,
+  PollVote,
   Project,
   ProjectTask,
   RecurringCompletion,
@@ -34,4 +40,10 @@ export interface DataAdapter {
   projectTasks: Collection<ProjectTask>;
   recurringTasks: Collection<RecurringTask>;
   recurringCompletions: Collection<RecurringCompletion>;
+  polls: Collection<Poll>;
+  pollOptions: Collection<PollOption>;
+  pollVotes: Collection<PollVote>;
+  events: Collection<FamilyEvent>;
+  eventRsvps: Collection<EventRsvp>;
+  eventItems: Collection<EventItem>;
 }

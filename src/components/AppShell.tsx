@@ -70,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className={["phone", fab ? "has-nav" : ""].filter(Boolean).join(" ")}>
         <div className="phone-scroll">{children}</div>
         {fab ? <FloatingNav href={fab.href} icon={fab.icon} label={fab.label} mark={mark} /> : null}
-        <BootScreen />
+        {path !== "/login" ? <BootScreen /> : null}
       </div>
     </div>
   );

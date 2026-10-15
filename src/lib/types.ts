@@ -233,3 +233,79 @@ export interface RecurringCompletion extends Entity {
   memberId?: string;
   completedAt: string;
 }
+
+/* ---------------------------------- Eventos --------------------------------- */
+
+export type EventKind = "cumpleanos_mes" | "navidad" | "ano_nuevo" | "celebracion";
+
+export const EVENT_KINDS: { value: Exclude<EventKind, "cumpleanos_mes">; label: string }[] = [
+  { value: "navidad", label: "Navidad" },
+  { value: "ano_nuevo", label: "Año nuevo" },
+  { value: "celebracion", label: "Celebración" },
+];
+
+export type PollStatus = "abierta" | "cerrada";
+
+export type RsvpStatus = "voy" | "no_voy" | "duda";
+
+export const RSVP_STATUSES: { value: RsvpStatus; label: string }[] = [
+  { value: "voy", label: "Venimos" },
+  { value: "no_voy", label: "No vamos" },
+  { value: "duda", label: "Aún no lo sabemos" },
+];
+
+export interface Poll extends Entity {
+  /** "YYYY-MM" */
+  month: string;
+  status: PollStatus;
+  eventId?: string | null;
+  createdAt: string;
+}
+
+export interface PollOption extends Entity {
+  pollId: string;
+  label: string;
+  startDate: string;
+  endDate: string;
+  sortOrder: number;
+}
+
+export interface PollVote extends Entity {
+  pollId: string;
+  optionId: string;
+  familyId: string;
+  memberId: string;
+  peopleCount: number;
+  createdAt: string;
+}
+
+/** Celebración: cumpleaños del mes, Navidad, Nochevieja u otra. */
+export interface FamilyEvent extends Entity {
+  title: string;
+  kind: EventKind;
+  startDate: string;
+  endDate: string;
+  place?: string;
+  notes?: string;
+  /** "YYYY-MM" en el cumpleaños del mes. */
+  month?: string | null;
+  pollId?: string | null;
+  createdAt: string;
+}
+
+export interface EventRsvp extends Entity {
+  eventId: string;
+  familyId: string;
+  memberId: string;
+  status: RsvpStatus;
+  peopleCount: number;
+  createdAt: string;
+}
+
+export interface EventItem extends Entity {
+  eventId: string;
+  name: string;
+  quantity: string;
+  memberId?: string;
+  createdAt: string;
+}

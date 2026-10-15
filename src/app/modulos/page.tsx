@@ -1,18 +1,21 @@
 import { ModuleTile } from "@/components/ModuleTile";
 import { TopBar } from "@/components/TopBar";
-import { BookIcon, BoxIcon, CalendarIcon, ShieldIcon, TasksIcon, UsersIcon } from "@/components/icons";
+import { BookIcon, BoxIcon, CalendarIcon, PartyIcon, ShieldIcon, TasksIcon, UsersIcon } from "@/components/icons";
 import { todayKey } from "@/lib/dates";
-import { listFamiliesWithMembers, listManuals, listReservations, listRules, loadWorkData } from "@/lib/queries";
+import { monthName } from "@/lib/events";
+import { getCurrentMember, listFamiliesWithMembers, listManuals, listReservations, listRules, loadEventNotices, loadWorkData } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function ModulesPage() {
-  const [reservations, manuals, rules, families, work] = await Promise.all([
+  const current = await getCurrentMember();
+  const [reservations, manuals, rules, families, work, events] = await Promise.all([
     listReservations(),
     listManuals(),
     listRules(),
     listFamiliesWithMembers(),
     loadWorkData(),
+    loadEventNotices(current?.family.id),
   ]);
 
   const today = todayKey();
@@ -63,6 +66,19 @@ export default async function ModulesPage() {
             work.missing
               ? "Pendiente de base de datos"
               : `${work.projects.length} proyectos · ${work.recurring.length} periodicas`
+          }
+        />
+        <ModuleTile
+          href="/eventos"
+          title="Eventos"
+          description="Cumpleaños, fiestas y quién trae la comida"
+          icon={<PartyIcon />}
+          meta={
+            events.missing
+              ? "Pendiente de base de datos"
+              : events.pollOpen
+                ? `Encuesta de ${monthName(events.month)}`
+                : "Celebraciones de la familia"
           }
         />
         <ModuleTile

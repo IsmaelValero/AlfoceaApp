@@ -54,7 +54,11 @@ from (
     ('mem-sara', 'Sara', 17, 2, 1999),
     ('mem-ismael', 'Ismael', 13, 10, 2000),
     ('mem-laura-valero', 'Laura', 3, 1, 1999),
-    ('mem-gabriel', 'Gabriel', 29, 9, 1995)
+    ('mem-gabriel', 'Gabriel', 29, 9, 1995),
+    ('mem-nerea', 'Nerea', 5, 12, 1995),
+    ('mem-sira', 'Sira', 17, 7, 2026),
+    ('mem-yayo', 'Yayo', 25, 1, 1936),
+    ('mem-yaya', 'Yaya', 18, 7, 1944)
 ) as data(id, name, birth_day, birth_month, birth_year)
 where member.id = data.id;
 

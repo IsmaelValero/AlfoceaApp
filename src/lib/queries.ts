@@ -8,14 +8,21 @@ import {
   todayKey,
   type DateKey,
 } from "@/lib/dates";
+import { currentMonthKey, weekendChoices } from "@/lib/events";
 import { timesOverlap } from "@/lib/hours";
 import { occurrencesBetween } from "@/lib/recurrence";
 import { getSessionMemberId } from "@/lib/session";
 import type {
+  EventItem,
+  EventRsvp,
   Family,
+  FamilyEvent,
   Manual,
   ManualCategory,
   Member,
+  Poll,
+  PollOption,
+  PollVote,
   Project,
   ProjectTask,
   RecurringCompletion,
@@ -308,4 +315,108 @@ export async function listWeekTasks(today = todayKey()): Promise<WeekTask[]> {
   }
 
   return items.sort((a, b) => a.date.localeCompare(b.date) || a.task.title.localeCompare(b.task.title));
+}
+
+/* ---------------------------------- Eventos --------------------------------- */
+
+export interface EventBoard {
+  missing: boolean;
+  month: string;
+  polls: Poll[];
+  options: PollOption[];
+  votes: PollVote[];
+  events: FamilyEvent[];
+  rsvps: EventRsvp[];
+  items: EventItem[];
+  families: Family[];
+  members: Member[];
+}
+
+const EMPTY_EVENTS: EventBoard = {
+  missing: true,
+  month: "",
+  polls: [],
+  options: [],
+  votes: [],
+  events: [],
+  rsvps: [],
+  items: [],
+  families: [],
+  members: [],
+};
+
+function isMissingEventTable(error: unknown) {
+  const record = error && typeof error === "object" ? (error as { code?: string; message?: string }) : {};
+  const message = record.message ?? (error instanceof Error ? error.message : String(error));
+  return record.code === "42P01" || record.code === "PGRST205" || /does not exist|schema cache|polls|event_rsvps|event_items/i.test(message);
+}
+
+function isUniqueViolation(error: unknown) {
+  const record = error && typeof error === "object" ? (error as { code?: string }) : {};
+  return record.code === "23505";
+}
+
+async function ensureCurrentPoll(polls: Poll[], month: string) {
+  if (polls.some((poll) => poll.month === month)) return polls;
+  try {
+    const poll = await db.polls.create({
+      month,
+      status: "abierta",
+      eventId: null,
+      createdAt: new Date().toISOString(),
+    });
+    await Promise.all(
+      weekendChoices(month).map((choice, index) =>
+        db.pollOptions.create({
+          pollId: poll.id,
+          label: choice.label,
+          startDate: choice.startDate,
+          endDate: choice.endDate,
+          sortOrder: index,
+        }),
+      ),
+    );
+    return [...polls, poll];
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
+    return db.polls.list();
+  }
+}
+
+export async function loadEventBoard(): Promise<EventBoard> {
+  const month = currentMonthKey(todayKey());
+  try {
+    const listed = await db.polls.list();
+    const polls = await ensureCurrentPoll(listed, month);
+    const [options, votes, events, rsvps, items, families, members] = await Promise.all([
+      db.pollOptions.list(),
+      db.pollVotes.list(),
+      db.events.list(),
+      db.eventRsvps.list(),
+      db.eventItems.list(),
+      db.families.list(),
+      db.members.list(),
+    ]);
+    return { missing: false, month, polls, options, votes, events, rsvps, items, families, members };
+  } catch (error) {
+    if (isMissingEventTable(error)) return { ...EMPTY_EVENTS, month };
+    throw error;
+  }
+}
+
+export async function loadEventNotices(familyId?: string) {
+  const board = await loadEventBoard();
+  if (board.missing) return { missing: true, month: board.month, pollOpen: false, pending: [] as FamilyEvent[] };
+  const today = todayKey();
+  const pollOpen = board.polls.some((poll) => poll.month === board.month && poll.status === "abierta");
+  const pending = familyId
+    ? board.events
+        .filter(
+          (event) =>
+            event.endDate >= today &&
+            !board.rsvps.some((rsvp) => rsvp.eventId === event.id && rsvp.familyId === familyId),
+        )
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    : [];
+  return { missing: false, month: board.month, pollOpen, pending };
 }

@@ -9,6 +9,12 @@ import type {
   Member,
   Project,
   ProjectTask,
+  EventItem,
+  EventRsvp,
+  FamilyEvent,
+  Poll,
+  PollOption,
+  PollVote,
   RecurringCompletion,
   RecurringTask,
   Reservation,
@@ -24,7 +30,13 @@ type Table =
   | "projects"
   | "project_tasks"
   | "recurring_tasks"
-  | "recurring_completions";
+  | "recurring_completions"
+  | "polls"
+  | "poll_options"
+  | "poll_votes"
+  | "events"
+  | "event_rsvps"
+  | "event_items";
 
 const FAMILY_COLUMNS = "id, name, color, notes";
 const MEMBER_COLUMNS_BASE = "id, family_id, name, last_name, role, phone, email";
@@ -554,6 +566,155 @@ function toRecurringRow(data: Partial<Omit<RecurringTask, "id">> & { id?: string
   };
 }
 
+const POLL_COLUMNS = "id, month, status, event_id, created_at";
+const POLL_OPTION_COLUMNS = "id, poll_id, label, start_date, end_date, sort_order";
+const POLL_VOTE_COLUMNS = "id, poll_id, option_id, family_id, member_id, people_count, created_at";
+const EVENT_COLUMNS = "id, title, kind, start_date, end_date, place, notes, month, poll_id, created_at";
+const RSVP_COLUMNS = "id, event_id, family_id, member_id, status, people_count, created_at";
+const ITEM_COLUMNS = "id, event_id, name, quantity, member_id, created_at";
+
+function mapPoll(row: Record<string, unknown>): Poll {
+  return {
+    id: String(row.id),
+    month: String(row.month),
+    status: row.status as Poll["status"],
+    eventId: row.event_id ? String(row.event_id) : null,
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapPollOption(row: Record<string, unknown>): PollOption {
+  return {
+    id: String(row.id),
+    pollId: String(row.poll_id),
+    label: String(row.label),
+    startDate: String(row.start_date).slice(0, 10),
+    endDate: String(row.end_date).slice(0, 10),
+    sortOrder: Number(row.sort_order),
+  };
+}
+
+function mapPollVote(row: Record<string, unknown>): PollVote {
+  return {
+    id: String(row.id),
+    pollId: String(row.poll_id),
+    optionId: String(row.option_id),
+    familyId: String(row.family_id),
+    memberId: String(row.member_id),
+    peopleCount: Number(row.people_count),
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapFamilyEvent(row: Record<string, unknown>): FamilyEvent {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    kind: row.kind as FamilyEvent["kind"],
+    startDate: String(row.start_date).slice(0, 10),
+    endDate: String(row.end_date).slice(0, 10),
+    place: row.place ? String(row.place) : undefined,
+    notes: row.notes ? String(row.notes) : undefined,
+    month: row.month ? String(row.month) : null,
+    pollId: row.poll_id ? String(row.poll_id) : null,
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapEventRsvp(row: Record<string, unknown>): EventRsvp {
+  return {
+    id: String(row.id),
+    eventId: String(row.event_id),
+    familyId: String(row.family_id),
+    memberId: String(row.member_id),
+    status: row.status as EventRsvp["status"],
+    peopleCount: Number(row.people_count),
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapEventItem(row: Record<string, unknown>): EventItem {
+  return {
+    id: String(row.id),
+    eventId: String(row.event_id),
+    name: String(row.name),
+    quantity: String(row.quantity),
+    memberId: row.member_id ? String(row.member_id) : undefined,
+    createdAt: String(row.created_at),
+  };
+}
+
+function toPollRow(data: Partial<Omit<Poll, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.month !== undefined ? { month: data.month } : {}),
+    ...(data.status !== undefined ? { status: data.status } : {}),
+    ...(data.eventId !== undefined ? { event_id: data.eventId ?? null } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+  };
+}
+
+function toPollOptionRow(data: Partial<Omit<PollOption, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.pollId !== undefined ? { poll_id: data.pollId } : {}),
+    ...(data.label !== undefined ? { label: data.label } : {}),
+    ...(data.startDate !== undefined ? { start_date: data.startDate } : {}),
+    ...(data.endDate !== undefined ? { end_date: data.endDate } : {}),
+    ...(data.sortOrder !== undefined ? { sort_order: data.sortOrder } : {}),
+  };
+}
+
+function toPollVoteRow(data: Partial<Omit<PollVote, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.pollId !== undefined ? { poll_id: data.pollId } : {}),
+    ...(data.optionId !== undefined ? { option_id: data.optionId } : {}),
+    ...(data.familyId !== undefined ? { family_id: data.familyId } : {}),
+    ...(data.memberId !== undefined ? { member_id: data.memberId } : {}),
+    ...(data.peopleCount !== undefined ? { people_count: data.peopleCount } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+  };
+}
+
+function toFamilyEventRow(data: Partial<Omit<FamilyEvent, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.title !== undefined ? { title: data.title } : {}),
+    ...(data.kind !== undefined ? { kind: data.kind } : {}),
+    ...(data.startDate !== undefined ? { start_date: data.startDate } : {}),
+    ...(data.endDate !== undefined ? { end_date: data.endDate } : {}),
+    ...(data.place !== undefined ? { place: data.place ?? null } : {}),
+    ...(data.notes !== undefined ? { notes: data.notes ?? null } : {}),
+    ...(data.month !== undefined ? { month: data.month ?? null } : {}),
+    ...(data.pollId !== undefined ? { poll_id: data.pollId ?? null } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+  };
+}
+
+function toEventRsvpRow(data: Partial<Omit<EventRsvp, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.eventId !== undefined ? { event_id: data.eventId } : {}),
+    ...(data.familyId !== undefined ? { family_id: data.familyId } : {}),
+    ...(data.memberId !== undefined ? { member_id: data.memberId } : {}),
+    ...(data.status !== undefined ? { status: data.status } : {}),
+    ...(data.peopleCount !== undefined ? { people_count: data.peopleCount } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+  };
+}
+
+function toEventItemRow(data: Partial<Omit<EventItem, "id">> & { id?: string }) {
+  return {
+    ...(data.id ? { id: data.id } : {}),
+    ...(data.eventId !== undefined ? { event_id: data.eventId } : {}),
+    ...(data.name !== undefined ? { name: data.name } : {}),
+    ...(data.quantity !== undefined ? { quantity: data.quantity } : {}),
+    ...(data.memberId !== undefined ? { member_id: data.memberId ?? null } : {}),
+    ...(data.createdAt !== undefined ? { created_at: data.createdAt } : {}),
+  };
+}
+
 function toCompletionRow(data: Partial<Omit<RecurringCompletion, "id">> & { id?: string }) {
   return {
     ...(data.id ? { id: data.id } : {}),
@@ -590,5 +751,11 @@ export function createSupabaseAdapter(): DataAdapter {
       mapCompletion,
       toCompletionRow,
     ),
+    polls: new SupabaseCollection<Poll>("polls", POLL_COLUMNS, mapPoll, toPollRow),
+    pollOptions: new SupabaseCollection<PollOption>("poll_options", POLL_OPTION_COLUMNS, mapPollOption, toPollOptionRow),
+    pollVotes: new SupabaseCollection<PollVote>("poll_votes", POLL_VOTE_COLUMNS, mapPollVote, toPollVoteRow),
+    events: new SupabaseCollection<FamilyEvent>("events", EVENT_COLUMNS, mapFamilyEvent, toFamilyEventRow),
+    eventRsvps: new SupabaseCollection<EventRsvp>("event_rsvps", RSVP_COLUMNS, mapEventRsvp, toEventRsvpRow),
+    eventItems: new SupabaseCollection<EventItem>("event_items", ITEM_COLUMNS, mapEventItem, toEventItemRow),
   };
 }
