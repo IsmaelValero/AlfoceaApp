@@ -19,7 +19,15 @@ create table if not exists public.members (
   last_name text,
   role text not null check (role in ('admin', 'adulto', 'joven', 'invitado')),
   phone text,
-  email text
+  email text,
+  birth_day smallint,
+  birth_month smallint,
+  birth_year smallint,
+  check (
+    (birth_day is null and birth_month is null)
+    or (birth_day between 1 and 31 and birth_month between 1 and 12)
+  ),
+  check (birth_year is null or birth_year between 1900 and 2100)
 );
 
 create table if not exists public.accounts (

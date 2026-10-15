@@ -27,7 +27,18 @@ type Table =
   | "recurring_completions";
 
 const FAMILY_COLUMNS = "id, name, color, notes";
-const MEMBER_COLUMNS = "id, family_id, name, last_name, role, phone, email";
+const MEMBER_COLUMNS_BASE = "id, family_id, name, last_name, role, phone, email";
+const MEMBER_COLUMNS = `${MEMBER_COLUMNS_BASE}, birth_day, birth_month, birth_year`;
+
+let membersBirthReady: boolean | null = null;
+
+async function memberSelectColumns() {
+  if (membersBirthReady === true) return MEMBER_COLUMNS;
+  if (membersBirthReady === false) return MEMBER_COLUMNS_BASE;
+  const { error } = await getSupabase().from("members").select("birth_day").limit(1);
+  membersBirthReady = !error;
+  return membersBirthReady ? MEMBER_COLUMNS : MEMBER_COLUMNS_BASE;
+}
 const RESERVATION_COLUMNS =
   "id, title, family_id, member_id, zone, start_date, end_date, start_time, end_time, guests, status, notes, created_at, resolved_at";
 const RESERVATION_COLUMNS_BASE =
@@ -79,6 +90,9 @@ function mapMember(row: Record<string, unknown>): Member {
     role: row.role as Member["role"],
     phone: row.phone ? String(row.phone) : undefined,
     email: row.email ? String(row.email) : undefined,
+    birthDay: row.birth_day ? Number(row.birth_day) : undefined,
+    birthMonth: row.birth_month ? Number(row.birth_month) : undefined,
+    birthYear: row.birth_year ? Number(row.birth_year) : undefined,
   };
 }
 
@@ -162,7 +176,59 @@ function toMemberRow(data: Partial<Omit<Member, "id">> & { id?: string }) {
     ...(data.role !== undefined ? { role: data.role } : {}),
     ...(data.phone !== undefined ? { phone: data.phone ?? null } : {}),
     ...(data.email !== undefined ? { email: data.email ?? null } : {}),
+    ...(data.birthDay !== undefined ? { birth_day: data.birthDay ?? null } : {}),
+    ...(data.birthMonth !== undefined ? { birth_month: data.birthMonth ?? null } : {}),
+    ...(data.birthYear !== undefined ? { birth_year: data.birthYear ?? null } : {}),
   };
+}
+
+class MembersCollection implements Collection<Member> {
+  async list(): Promise<Member[]> {
+    const columns = await memberSelectColumns();
+    const { data, error } = await getSupabase().from("members").select(columns);
+    if (error) throw error;
+    return (data ?? []).map((row) => mapMember(row as unknown as Record<string, unknown>));
+  }
+
+  async get(id: string): Promise<Member | null> {
+    const columns = await memberSelectColumns();
+    const { data, error } = await getSupabase().from("members").select(columns).eq("id", id).maybeSingle();
+    if (error) throw error;
+    return data ? mapMember(data as unknown as Record<string, unknown>) : null;
+  }
+
+  async create(data: Omit<Member, "id">): Promise<Member> {
+    this.assertBirthdayColumn(data);
+    const columns = await memberSelectColumns();
+    const id = randomUUID();
+    const row = toMemberRow({ ...data, id });
+    const { data: created, error } = await getSupabase().from("members").insert(row).select(columns).single();
+    if (error) throw error;
+    return mapMember(created as unknown as Record<string, unknown>);
+  }
+
+  async update(id: string, patch: Partial<Omit<Member, "id">>): Promise<Member | null> {
+    this.assertBirthdayColumn(patch);
+    const columns = await memberSelectColumns();
+    const row = toMemberRow(patch);
+    const { data, error } = await getSupabase().from("members").update(row).eq("id", id).select(columns).maybeSingle();
+    if (error) throw error;
+    return data ? mapMember(data as unknown as Record<string, unknown>) : null;
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const { error, count } = await getSupabase().from("members").delete({ count: "exact" }).eq("id", id);
+    if (error) throw error;
+    return (count ?? 0) > 0;
+  }
+
+  private assertBirthdayColumn(data: Partial<Member>) {
+    const touchesBirthday =
+      data.birthDay !== undefined || data.birthMonth !== undefined || data.birthYear !== undefined;
+    if (touchesBirthday && membersBirthReady === false) {
+      throw new Error("Falta el cumpleaños en Supabase. Ejecuta supabase/birthdays.sql en el SQL Editor.");
+    }
+  }
 }
 
 function toReservationRow(data: Partial<Omit<Reservation, "id">> & { id?: string }, withResolved: boolean) {
@@ -501,7 +567,7 @@ function toCompletionRow(data: Partial<Omit<RecurringCompletion, "id">> & { id?:
 export function createSupabaseAdapter(): DataAdapter {
   return {
     families: new SupabaseCollection<Family>("families", FAMILY_COLUMNS, mapFamily, toFamilyRow),
-    members: new SupabaseCollection<Member>("members", MEMBER_COLUMNS, mapMember, toMemberRow),
+    members: new MembersCollection(),
     reservations: new ReservationsCollection(),
     manuals: new ManualsCollection(),
     rules: new SupabaseCollection<Rule>("rules", RULE_COLUMNS, mapRule, toRuleRow),

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getAdminSession } from "@/lib/authz";
+import { isValidBirthday } from "@/lib/birthdays";
 import { db } from "@/lib/db";
 import { text, type FormState } from "@/lib/forms";
 import { MEMBER_ROLES, type MemberRole } from "@/lib/types";
@@ -78,18 +79,52 @@ export async function deleteFamily(formData: FormData) {
 
 const ROLE_VALUES = MEMBER_ROLES.map((role) => role.value);
 
+function optionalNumber(formData: FormData, key: string) {
+  const value = text(formData, key);
+  if (!value) return null;
+  const number = Number(value);
+  if (!Number.isInteger(number)) return undefined;
+  return number;
+}
+
 function parseMember(formData: FormData) {
   const familyId = text(formData, "familyId");
   const name = text(formData, "name");
   const role = text(formData, "role") as MemberRole;
   const phone = text(formData, "phone");
   const email = text(formData, "email");
+  const birthDay = optionalNumber(formData, "birthDay");
+  const birthMonth = optionalNumber(formData, "birthMonth");
+  const birthYear = optionalNumber(formData, "birthYear");
 
   if (!familyId) return { error: "Falta la familia." };
   if (!name) return { error: "El miembro necesita un nombre." };
   if (!ROLE_VALUES.includes(role)) return { error: "Elige un rol." };
+  if (birthDay === undefined || birthMonth === undefined || birthYear === undefined) {
+    return { error: "El cumpleaños tiene que ser un número." };
+  }
+  if ((birthDay === null) !== (birthMonth === null)) {
+    return { error: "El cumpleaños necesita día y mes." };
+  }
+  if (birthDay !== null && birthMonth !== null && !isValidBirthday(birthDay, birthMonth, birthYear)) {
+    return { error: "Esa fecha de cumpleaños no existe." };
+  }
+  if (birthYear !== null && (birthYear < 1900 || birthYear > 2100)) {
+    return { error: "Revisa el año de nacimiento." };
+  }
 
-  return { data: { familyId, name, role, phone: phone || undefined, email: email || undefined } };
+  return {
+    data: {
+      familyId,
+      name,
+      role,
+      phone: phone || undefined,
+      email: email || undefined,
+      birthDay,
+      birthMonth,
+      birthYear,
+    },
+  };
 }
 
 export async function createMember(_prevState: FormState, formData: FormData): Promise<FormState> {

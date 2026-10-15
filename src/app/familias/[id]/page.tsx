@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { ReservationCard } from "@/components/ReservationCard";
 import { Badge, BUTTON_STYLES } from "@/components/ui";
+import { listAccounts } from "@/lib/accounts";
 import { getAdminSession } from "@/lib/authz";
+import { formatBirthday } from "@/lib/birthdays";
 import { todayKey } from "@/lib/dates";
 import { getFamilyWithMembers, listReservations } from "@/lib/queries";
 import { MEMBER_ROLES } from "@/lib/types";
@@ -15,11 +17,13 @@ export const dynamic = "force-dynamic";
 
 export default async function FamilyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [family, reservations, admin] = await Promise.all([
+  const [family, reservations, admin, accounts] = await Promise.all([
     getFamilyWithMembers(id),
     listReservations(),
     getAdminSession(),
+    listAccounts(),
   ]);
+  const withAccount = new Set(accounts.map((account) => account.memberId));
 
   if (!family) notFound();
 
@@ -59,11 +63,14 @@ export default async function FamilyDetailPage({ params }: { params: Promise<{ i
               {family.members.map((member) => {
                 const role = MEMBER_ROLES.find((r) => r.value === member.role);
                 const contact = member.phone ?? member.email;
+                const birthday = formatBirthday(member);
+                const meta = [birthday, withAccount.has(member.id) ? null : "Sin cuenta"].filter(Boolean);
                 return (
                   <li key={member.id} className="card px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-ink">{member.name}</p>
+                        {meta.length > 0 ? <p className="mt-0.5 text-xs text-muted">{meta.join(" · ")}</p> : null}
                         {contact ? (
                           <a
                             href={member.phone ? `tel:${member.phone.replace(/\s/g, "")}` : `mailto:${member.email}`}
@@ -71,9 +78,9 @@ export default async function FamilyDetailPage({ params }: { params: Promise<{ i
                           >
                             {contact}
                           </a>
-                        ) : (
+                        ) : withAccount.has(member.id) ? (
                           <p className="mt-0.5 text-xs text-muted">Sin contacto</p>
-                        )}
+                        ) : null}
                       </div>
                       <Badge tone={member.role === "admin" ? "brand" : "neutral"}>{role?.label ?? member.role}</Badge>
                     </div>

@@ -49,6 +49,12 @@ export interface Member extends Entity {
   role: MemberRole;
   phone?: string;
   email?: string;
+  /** Día del cumpleaños (1-31). Vacío si aún no se conoce. */
+  birthDay?: number | null;
+  /** Mes del cumpleaños (1-12). */
+  birthMonth?: number | null;
+  /** Año, opcional. Sirve para la edad; el mes sale igual sin él. */
+  birthYear?: number | null;
 }
 
 /* ---------------------------------- Reservas --------------------------------- */
