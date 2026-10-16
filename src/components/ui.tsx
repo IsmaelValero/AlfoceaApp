@@ -62,6 +62,10 @@ export function PageHeader({
   );
 }
 
+/**
+ * Solo en pantallas sin botón flotante (formularios nueva/editar, etc.).
+ * Si FloatingNav ya lleva a la pantalla padre, no uses BackLink.
+ */
 export function BackLink({ href, label }: { href: string; label: string }) {
   return (
     <Link

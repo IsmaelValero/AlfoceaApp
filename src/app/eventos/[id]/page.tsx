@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { ConfirmSubmit } from "@/components/ConfirmSubmit";
 import { FoodForm, RsvpForm } from "@/components/EventForms";
-import { BackLink, Badge, PageHeader } from "@/components/ui";
+import { Badge, PageHeader } from "@/components/ui";
 import { getAdminSession } from "@/lib/authz";
 import { formatBirthday } from "@/lib/birthdays";
 import { formatLong, formatRange } from "@/lib/dates";
@@ -38,7 +38,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   return (
     <main className="screen">
-      <BackLink href="/eventos" label="Eventos" />
       <PageHeader
         title={event.title}
         subtitle={event.startDate === event.endDate ? formatLong(event.startDate) : formatRange(event.startDate, event.endDate)}

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { ClosePollForm } from "@/components/EventForms";
 import { PollVoteForm } from "@/components/PollVoteForm";
-import { BackLink, EmptyState, PageHeader } from "@/components/ui";
+import { EmptyState, PageHeader } from "@/components/ui";
 import { getAdminSession } from "@/lib/authz";
 import { formatBirthday } from "@/lib/birthdays";
 import { isSingleDayOption, monthName } from "@/lib/events";
@@ -28,7 +28,6 @@ export default async function PollPage() {
   if (board.missing) {
     return (
       <main className="screen">
-        <BackLink href="/eventos" label="Eventos" />
         <EmptyState title="Falta preparar la base de datos" description="Ejecuta supabase/events.sql en el SQL Editor." />
       </main>
     );
@@ -38,7 +37,6 @@ export default async function PollPage() {
   if (!poll) {
     return (
       <main className="screen">
-        <BackLink href="/eventos" label="Eventos" />
         <EmptyState title="No hay encuesta este mes" />
       </main>
     );
@@ -69,7 +67,6 @@ export default async function PollPage() {
 
   return (
     <main className="screen">
-      <BackLink href="/eventos" label="Eventos" />
       <PageHeader title={`Cumpleaños de ${monthName(board.month)}`} subtitle="Un voto por familia · varios días" />
 
       {birthdays.length > 0 ? (
@@ -132,9 +129,7 @@ export default async function PollPage() {
                   <p className="font-semibold text-ink">{family?.name ?? "Familia"}</p>
                   <p className="mt-0.5 text-muted">
                     {labels}
-                    {sample
-                      ? ` · ${peopleLabel(sample.adultsCount, sample.childrenCount)}`
-                      : ""}
+                    {sample ? ` · ${peopleLabel(sample.adultsCount, sample.childrenCount)}` : ""}
                   </p>
                 </li>
               );
